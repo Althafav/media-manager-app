@@ -1,0 +1,32 @@
+I want to build a new internal web application called **Media Manager**.
+
+Before writing or changing any code, inspect the entire repository and understand the current project structure, framework, dependencies, database setup, environment configuration, and existing conventions.
+
+Do not start implementing yet.
+
+After inspection, give me:
+
+1. Current architecture
+2. Existing technologies/dependencies
+3. Recommended architecture for the Media Manager MVP
+4. Proposed database schema
+5. Proposed folder/file structure
+6. Any technical risks or decisions that should be made before implementation
+
+The application goal is:
+
+A media manager organizes event photos/videos into folders on local computers, SSDs, and HDDs. After completing the organization, they manually register the folder locations in this web application.
+
+The web application does NOT store, upload, scan, or move the actual media files.
+
+The application is a searchable catalog of where media is physically stored.
+
+Core hierarchy:
+
+Event → Day → Room → Session → Media Location
+
+Agenda/session data comes from this API:
+
+https://speakers.aimcongress.com/api/website/agenda?EventId=1f9e118d-c029-4a09-801a-eb20fe0f82f7
+
+Wait for my approval after presenting your architecture before making major implementation changes.

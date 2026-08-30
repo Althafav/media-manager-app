@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Event {
+  id             String          @id @default(cuid())
+  externalId     String          @unique
+  name           String
+  storage        String          @default("")
+  sessions       Session[]
+  tracks         Track[]
+  rooms          Room[]
+  mediaLocations MediaLocation[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model Room {
+  id         String    @id @default(cuid())
+  externalId Int
+  eventId    String
+  event      Event     @relation(fields: [eventId], references: [id])
+  name       String
+  sessions   Session[]
+
+  @@unique([eventId, externalId])
+}
+
+model Track {
+  id         String    @id @default(cuid())
+  externalId Int
+  eventId    String
+  event      Event     @relation(fields: [eventId], references: [id])
+  name       String
+  color      String?
+  itemOrder  Int?
+  sessions   Session[]
+
+  @@unique([eventId, externalId])
+}
+
+model Session {
+  id             String          @id @default(cuid())
+  externalId     Int
+  eventId        String
+  event          Event           @relation(fields: [eventId], references: [id])
+  roomId         String?
+  room           Room?           @relation(fields: [roomId], references: [id])
+  trackId        String?
+  track          Track?          @relation(fields: [trackId], references: [id])
+  name           String
+  date           DateTime
+  startTime      String
+  endTime        String
+  sessionType    String?
+  sessionTypeId  Int?
+  isActive       Boolean         @default(true)
+  lastSyncedAt   DateTime        @default(now())
+  mediaLocations MediaLocation[]
+
+  @@unique([eventId, externalId])
+  @@index([eventId, date])
+}
+
+model MediaLocation {
+  id          String    @id @default(cuid())
+  eventId     String
+  event       Event     @relation(fields: [eventId], references: [id])
+  sessionId   String?
+  session     Session?  @relation(fields: [sessionId], references: [id])
+  folderPath  String
+  mediaType   MediaType
+  description String?
+  notes       String?
+  tags        String[]  @default([])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([eventId])
+  @@index([sessionId])
+}
+
+enum MediaType {
+  PHOTO
+  VIDEO
+  MIXED
+  OTHER
+}

@@ -1,0 +1,51 @@
+// Shared Tailwind utility-class strings for the ledger design system.
+// Kept as plain strings (not @apply/CSS classes) so every page composes
+// the same look purely out of Tailwind utilities.
+
+export const page = "mx-auto w-full max-w-[960px] px-5 pt-8 pb-16";
+
+export const h1 =
+  "block w-fit font-display font-extrabold text-[2.1rem] leading-none tracking-wide uppercase pb-2.5 border-b-[3px] border-accent mb-2";
+
+export const h2 =
+  "font-display font-bold text-xl tracking-wide uppercase text-accent-ink mt-7 mb-2.5 pl-2.5 border-l-4 border-accent";
+
+export const muted = "text-ink-soft text-sm";
+
+export const backLink =
+  "inline-flex items-center gap-1.5 font-mono text-xs font-medium tracking-wider uppercase text-ink-soft mb-3 hover:text-accent hover:underline hover:decoration-accent";
+
+export const button =
+  "font-mono text-[0.8rem] font-medium tracking-wider uppercase px-4 py-2.5 border border-ink rounded-[2px] bg-ink text-paper cursor-pointer w-fit transition-colors duration-150 enabled:hover:bg-accent enabled:hover:border-accent disabled:opacity-60 disabled:cursor-not-allowed";
+
+export const table = "w-full border-collapse my-2 mb-6";
+export const th =
+  "text-left px-2.5 py-2 border-b-2 border-ink font-mono text-xs uppercase tracking-wider text-ink-soft";
+export const td = "text-left px-2.5 py-2 border-b border-rule align-top";
+export const trHover = "hover:bg-accent/5";
+
+export const card =
+  "relative bg-paper-card border border-rule border-l-[6px] border-l-accent-ink rounded-[2px] px-4.5 py-4 mb-3";
+
+const badgeBase =
+  "clip-tag inline-flex items-center h-6 pl-3.5 pr-2 font-mono text-xs font-medium tracking-wider uppercase mr-1.5";
+export const badge = `${badgeBase} bg-rule text-ink`;
+export const badgeClasses = (extra: string) => `${badgeBase} ${extra}`;
+
+export const tagChip =
+  "clip-tag-sm inline-flex items-center h-6 gap-1.5 pl-3 pr-2 font-mono text-xs bg-rule text-ink mr-1.5";
+
+export const bannerOk = "px-3.5 py-2.5 mb-3 border-l-4 border-l-ok bg-ok/10 text-ok text-sm";
+export const bannerError = "px-3.5 py-2.5 mb-3 border-l-4 border-l-danger bg-danger/10 text-danger text-sm";
+
+export const formStack =
+  "flex flex-col gap-4 max-w-[520px] px-5 py-4 bg-paper-card border border-rule border-l-4 border-l-accent-ink";
+export const formInline =
+  "flex flex-wrap gap-2.5 items-end mb-4 px-4 py-3.5 bg-paper-card border border-rule";
+
+export const label = "flex flex-col gap-1 font-mono text-xs font-medium tracking-wider uppercase text-ink-soft";
+
+export const input =
+  "w-full font-sans normal-case tracking-normal px-2.5 py-2 border border-rule rounded-[2px] bg-paper text-ink";
+
+export const errorText = "font-mono text-xs normal-case tracking-normal text-danger";
