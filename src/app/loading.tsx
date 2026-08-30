@@ -9,6 +9,9 @@ export default function Loading() {
         </span>
         <span className="h-1 w-40 overflow-hidden rounded-[2px] bg-rule">
           <span className="block h-full w-1/2 animate-pulse bg-accent" />
+
+
+          
         </span>
       </div>
     </div>
