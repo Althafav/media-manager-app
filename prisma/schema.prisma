@@ -62,6 +62,7 @@ model Session {
   endTime        String
   sessionType    String?
   sessionTypeId  Int?
+  status         SessionStatus   @default(AVAILABLE)
   isActive       Boolean         @default(true)
   lastSyncedAt   DateTime        @default(now())
   mediaLocations MediaLocation[]
@@ -93,4 +94,9 @@ enum MediaType {
   VIDEO
   MIXED
   OTHER
+}
+
+enum SessionStatus {
+  AVAILABLE
+  CANCELLED
 }

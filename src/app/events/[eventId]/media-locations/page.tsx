@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getEventBasic, getMediaLocations } from "@/lib/data";
 import * as ui from "@/lib/ui";
 import { mediaTypeBadgeClasses } from "@/lib/media-type-badge";
+import { CopyButton } from "@/components/CopyButton";
 
 export default async function MediaLocationsPage({
   params,
@@ -74,7 +75,10 @@ export default async function MediaLocationsPage({
             <span className={ui.badgeClasses(mediaTypeBadgeClasses(ml.mediaType))}>
               {ml.mediaType}
             </span>
-            <p className="mt-2.5">{ml.folderPath}</p>
+            <p className="mt-2.5">
+              {ml.folderPath}
+              <CopyButton text={ml.folderPath} />
+            </p>
             {ml.session && (
               <p className={`${ui.muted} mt-2`}>
                 Session:{" "}

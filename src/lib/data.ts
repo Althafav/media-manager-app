@@ -42,7 +42,7 @@ export async function getEventWithSessionTree(eventId: string) {
         include: {
           sessions: {
             where: { isActive: true },
-            include: { room: true, track: true, _count: { select: { mediaLocations: true } } },
+            include: { room: true, track: true, mediaLocations: { select: { mediaType: true } } },
             orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
           },
         },

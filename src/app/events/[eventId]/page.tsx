@@ -2,28 +2,57 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getEventWithSessionTree } from '@/lib/data'
 import { resyncEvent } from './actions'
+import { mediaTypeBadgeClasses } from '@/lib/media-type-badge'
+import { sessionStatusBadgeClasses, SESSION_STATUS_LABELS } from '@/lib/session-status-badge'
+import type { MediaType } from '@/generated/prisma/enums'
+import { SessionStatus } from '@/generated/prisma/enums'
 import * as ui from '@/lib/ui'
 
 function formatDate(date: Date) {
   return date.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 }
 
+const MEDIA_TYPE_ORDER: MediaType[] = ['PHOTO', 'VIDEO', 'MIXED', 'OTHER']
+const MEDIA_TYPE_LABELS: Record<MediaType, string> = {
+  PHOTO: 'Photo',
+  VIDEO: 'Video',
+  MIXED: 'Mixed',
+  OTHER: 'Other',
+}
+
+function countByMediaType(mediaLocations: { mediaType: MediaType }[]) {
+  const counts = new Map<MediaType, number>()
+  for (const loc of mediaLocations) {
+    counts.set(loc.mediaType, (counts.get(loc.mediaType) ?? 0) + 1)
+  }
+  return counts
+}
+
+const SESSION_STATUSES = Object.values(SessionStatus)
+
 export default async function EventDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ eventId: string }>
-  searchParams: Promise<{ added?: string }>
+  searchParams: Promise<{ added?: string; q?: string; status?: string }>
 }) {
   const { eventId } = await params
-  const { added } = await searchParams
+  const { added, q, status } = await searchParams
 
   const event = await getEventWithSessionTree(eventId)
 
   if (!event) notFound()
 
+  const query = q?.trim().toLowerCase() ?? ''
+  const filteredSessions = event.sessions.filter((session) => {
+    if (status && session.status !== status) return false
+    if (query && !session.name.toLowerCase().includes(query)) return false
+    return true
+  })
+
   const days = new Map<string, typeof event.sessions>()
-  for (const session of event.sessions) {
+  for (const session of filteredSessions) {
     const key = session.date.toISOString().slice(0, 10)
     if (!days.has(key)) days.set(key, [])
     days.get(key)!.push(session)
@@ -51,8 +80,37 @@ export default async function EventDetailPage({
         View all media locations
       </Link>
 
-      {days.size === 0 ? (
+      <form className={ui.formInline}>
+        <label className={ui.label}>
+          Search
+          <input
+            type="text"
+            name="q"
+            defaultValue={q}
+            placeholder="session name"
+            className={ui.input}
+          />
+        </label>
+        <label className={ui.label}>
+          Status
+          <select name="status" defaultValue={status ?? ''} className={ui.input}>
+            <option value="">Any</option>
+            {SESSION_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {SESSION_STATUS_LABELS[s]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="submit" className={ui.button}>
+          Filter
+        </button>
+      </form>
+
+      {event.sessions.length === 0 ? (
         <p className={ui.muted}>No sessions synced yet.</p>
+      ) : days.size === 0 ? (
+        <p className={ui.muted}>No sessions match your filters.</p>
       ) : (
         [...days.entries()].map(([dayKey, sessions]) => {
           const rooms = new Map<string, typeof sessions>()
@@ -70,30 +128,42 @@ export default async function EventDetailPage({
                   <strong className="font-semibold">{roomName}</strong>
                   <table className={ui.table}>
                     <tbody>
-                      {roomSessions.map((session) => (
-                        <tr key={session.id} className={ui.trHover}>
-                          <td className={`${ui.td} whitespace-nowrap`}>
-                            {session.startTime.slice(0, 5)}–{session.endTime.slice(0, 5)}
-                          </td>
-                          <td className={ui.td}>
-                            <Link
-                              href={`/events/${event.id}/sessions/${session.id}`}
-                              className="hover:underline hover:decoration-accent hover:decoration-2"
-                            >
-                              {session.name}
-                            </Link>
-                          </td>
-                          <td className={`${ui.td} whitespace-nowrap`}>
-                            <span
-                              className={ui.badgeClasses(
-                                session._count.mediaLocations > 0 ? 'bg-ok text-paper' : 'bg-rule text-ink'
+                      {roomSessions.map((session) => {
+                        const counts = countByMediaType(session.mediaLocations)
+                        return (
+                          <tr key={session.id} className={ui.trHover}>
+                            <td className={`${ui.td} whitespace-nowrap`}>
+                              {session.startTime.slice(0, 5)}–{session.endTime.slice(0, 5)}
+                            </td>
+                            <td className={ui.td}>
+                              <Link
+                                href={`/events/${event.id}/sessions/${session.id}`}
+                                className="hover:underline hover:decoration-accent hover:decoration-2"
+                              >
+                                {session.name}
+                              </Link>
+                              {session.status === SessionStatus.CANCELLED && (
+                                <span className={ui.badgeClasses(`${sessionStatusBadgeClasses(session.status)} ml-1.5`)}>
+                                  {SESSION_STATUS_LABELS[session.status]}
+                                </span>
                               )}
-                            >
-                              {session._count.mediaLocations} media
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className={`${ui.td} whitespace-nowrap`}>
+                              {session.mediaLocations.length === 0 ? (
+                                <span className={ui.badgeClasses('bg-rule text-ink')}>0 media</span>
+                              ) : (
+                                <div className="flex flex-wrap gap-1">
+                                  {MEDIA_TYPE_ORDER.filter((type) => counts.has(type)).map((type) => (
+                                    <span key={type} className={ui.badgeClasses(mediaTypeBadgeClasses(type))}>
+                                      {counts.get(type)} {MEDIA_TYPE_LABELS[type]}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>
