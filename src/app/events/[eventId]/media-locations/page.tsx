@@ -1,12 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@/generated/prisma/client";
-import { MediaType } from "@/generated/prisma/enums";
+import { getEventBasic, getMediaLocations } from "@/lib/data";
 import * as ui from "@/lib/ui";
 import { mediaTypeBadgeClasses } from "@/lib/media-type-badge";
-
-const VALID_MEDIA_TYPES = new Set<string>(Object.values(MediaType));
 
 export default async function MediaLocationsPage({
   params,
@@ -24,31 +20,10 @@ export default async function MediaLocationsPage({
   const { eventId } = await params;
   const { q, mediaType, sessionId, added, updated } = await searchParams;
 
-  const event = await prisma.event.findUnique({ where: { id: eventId } });
+  const event = await getEventBasic(eventId);
   if (!event) notFound();
 
-  const where: Prisma.MediaLocationWhereInput = {
-    eventId: event.id,
-    ...(mediaType && VALID_MEDIA_TYPES.has(mediaType)
-      ? { mediaType: mediaType as MediaType }
-      : {}),
-    ...(sessionId ? { sessionId } : {}),
-    ...(q
-      ? {
-          OR: [
-            { folderPath: { contains: q, mode: "insensitive" } },
-            { description: { contains: q, mode: "insensitive" } },
-            { tags: { has: q } },
-          ],
-        }
-      : {}),
-  };
-
-  const mediaLocations = await prisma.mediaLocation.findMany({
-    where,
-    include: { session: true },
-    orderBy: { createdAt: "desc" },
-  });
+  const mediaLocations = await getMediaLocations(event.id, { q, mediaType, sessionId });
 
   return (
     <div className={ui.page}>

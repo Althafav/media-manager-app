@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
+import { getEventWithSessionTree } from '@/lib/data'
 import { resyncEvent } from './actions'
 import * as ui from '@/lib/ui'
 
@@ -18,16 +18,7 @@ export default async function EventDetailPage({
   const { eventId } = await params
   const { added } = await searchParams
 
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-    include: {
-      sessions: {
-        where: { isActive: true },
-        include: { room: true, track: true, _count: { select: { mediaLocations: true } } },
-        orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
-      },
-    },
-  })
+  const event = await getEventWithSessionTree(eventId)
 
   if (!event) notFound()
 

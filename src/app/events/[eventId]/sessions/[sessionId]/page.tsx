@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
+import { getSessionDetail } from '@/lib/data'
 import * as ui from '@/lib/ui'
 import { mediaTypeBadgeClasses } from '@/lib/media-type-badge'
 
@@ -11,15 +11,7 @@ export default async function SessionDetailPage({
 }) {
   const { eventId, sessionId } = await params
 
-  const session = await prisma.session.findUnique({
-    where: { id: sessionId },
-    include: {
-      room: true,
-      track: true,
-      event: true,
-      mediaLocations: { orderBy: { createdAt: 'desc' } },
-    },
-  })
+  const session = await getSessionDetail(sessionId)
 
   if (!session || session.eventId !== eventId) notFound()
 

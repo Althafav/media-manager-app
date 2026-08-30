@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
+import { getEventWithActiveSessions } from '@/lib/data'
 import { MediaLocationForm } from '@/components/MediaLocationForm'
 import { createMediaLocation } from '../actions'
 import * as ui from '@/lib/ui'
@@ -15,10 +15,7 @@ export default async function NewMediaLocationPage({
   const { eventId } = await params
   const { sessionId } = await searchParams
 
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-    include: { sessions: { where: { isActive: true }, orderBy: [{ date: 'asc' }, { startTime: 'asc' }] } },
-  })
+  const event = await getEventWithActiveSessions(eventId)
   if (!event) notFound()
 
   return (

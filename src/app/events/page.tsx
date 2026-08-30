@@ -1,12 +1,9 @@
 import Link from 'next/link'
-import { prisma } from '@/lib/prisma'
+import { getEvents } from '@/lib/data'
 import * as ui from '@/lib/ui'
 
 export default async function EventsPage() {
-  const events = await prisma.event.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { _count: { select: { sessions: true, mediaLocations: true } } },
-  })
+  const events = await getEvents()
 
   return (
     <div className={ui.page}>

@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { updateTag } from 'next/cache'
 import { syncAgendaForEvent } from '@/lib/sync/agenda-sync'
 import { newEventSchema } from '@/lib/validation/event'
 
@@ -41,5 +42,6 @@ export async function createAndSyncEvent(_prevState: NewEventState, formData: Fo
     }
   }
 
+  updateTag('events')
   redirect(`/events/${eventId}?added=1`)
 }

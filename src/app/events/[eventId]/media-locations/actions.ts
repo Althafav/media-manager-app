@@ -1,7 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, updateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { mediaLocationInputSchema } from '@/lib/validation/media-location'
 
@@ -48,6 +48,10 @@ export async function createMediaLocation(
     return { values: raw, errors: { form: 'Could not save this media location. Please try again.' } }
   }
 
+  updateTag('events')
+  updateTag(`event:${parsed.data.eventId}`)
+  updateTag(`media-locations:${parsed.data.eventId}`)
+  if (parsed.data.sessionId) updateTag(`session:${parsed.data.sessionId}`)
   revalidatePath(`/events/${parsed.data.eventId}/media-locations`)
   if (parsed.data.sessionId) {
     revalidatePath(`/events/${parsed.data.eventId}/sessions/${parsed.data.sessionId}`)
@@ -63,12 +67,26 @@ export async function updateMediaLocation(
   const { raw, parsed } = parseForm(formData)
   if (!parsed.success) return { values: raw, errors: fieldErrorsFrom(parsed) }
 
+  let previousSessionId: string | null = null
   try {
+    const existing = await prisma.mediaLocation.findUnique({
+      where: { id: mediaLocationId },
+      select: { sessionId: true },
+    })
+    previousSessionId = existing?.sessionId ?? null
     await prisma.mediaLocation.update({ where: { id: mediaLocationId }, data: parsed.data })
   } catch {
     return { values: raw, errors: { form: 'Could not save changes. Please try again.' } }
   }
 
+  updateTag('events')
+  updateTag(`event:${parsed.data.eventId}`)
+  updateTag(`media-locations:${parsed.data.eventId}`)
+  updateTag(`media-location:${mediaLocationId}`)
+  if (parsed.data.sessionId) updateTag(`session:${parsed.data.sessionId}`)
+  if (previousSessionId && previousSessionId !== parsed.data.sessionId) {
+    updateTag(`session:${previousSessionId}`)
+  }
   revalidatePath(`/events/${parsed.data.eventId}/media-locations`)
   if (parsed.data.sessionId) {
     revalidatePath(`/events/${parsed.data.eventId}/sessions/${parsed.data.sessionId}`)
