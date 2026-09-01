@@ -49,3 +49,8 @@ export const input =
   "w-full font-sans normal-case tracking-normal px-2.5 py-2 border border-rule rounded-[2px] bg-paper text-ink";
 
 export const errorText = "font-mono text-xs normal-case tracking-normal text-danger";
+
+export const radioGroup = "flex flex-wrap gap-4";
+export const radioOption =
+  "inline-flex items-center gap-1.5 font-sans normal-case tracking-normal text-sm text-ink";
+export const radioInput = "accent-accent-ink";

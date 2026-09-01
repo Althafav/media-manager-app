@@ -55,6 +55,21 @@ export async function getEventWithSessionTree(eventId: string) {
   return { ...event, sessions: event.sessions.map((s) => ({ ...s, date: new Date(s.date) })) }
 }
 
+export async function getEventRoomsAndTracks(eventId: string) {
+  return unstable_cache(
+    async () =>
+      prisma.event.findUnique({
+        where: { id: eventId },
+        include: {
+          rooms: { orderBy: { name: 'asc' } },
+          tracks: { orderBy: [{ itemOrder: 'asc' }, { name: 'asc' }] },
+        },
+      }),
+    ['event-rooms-and-tracks', eventId],
+    { tags: [`event:${eventId}`], revalidate: 60 }
+  )()
+}
+
 export async function getEventWithActiveSessions(eventId: string) {
   return unstable_cache(
     async () =>

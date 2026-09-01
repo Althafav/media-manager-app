@@ -2,10 +2,18 @@
 
 import { useActionState } from 'react'
 import { TagInput } from '@/components/TagInput'
+import { SessionCombobox } from '@/components/SessionCombobox'
 import type { MediaLocationFormState } from '@/app/events/[eventId]/media-locations/actions'
 import * as ui from '@/lib/ui'
 
 type SessionOption = { id: string; name: string }
+
+const MEDIA_TYPE_OPTIONS = [
+  { value: 'PHOTO', label: 'Photo' },
+  { value: 'VIDEO', label: 'Video' },
+  { value: 'MIXED', label: 'Mixed' },
+  { value: 'OTHER', label: 'Other' },
+] as const
 
 export function MediaLocationForm({
   action,
@@ -37,22 +45,15 @@ export function MediaLocationForm({
     <form action={formAction} className={ui.formStack}>
       <input type="hidden" name="eventId" value={eventId} />
 
-      <label className={ui.label}>
+      <div className={ui.label}>
         Session (optional)
-        <select
+        <SessionCombobox
           name="sessionId"
-          defaultValue={values.sessionId ?? initial?.sessionId ?? ''}
-          className={ui.input}
-        >
-          <option value="">— None (event-level) —</option>
-          {sessions.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
+          sessions={sessions}
+          defaultSessionId={values.sessionId ?? initial?.sessionId ?? ''}
+        />
         {state.errors?.sessionId && <span className={ui.errorText}>{state.errors.sessionId}</span>}
-      </label>
+      </div>
 
       <label className={ui.label}>
         Folder path
@@ -66,21 +67,25 @@ export function MediaLocationForm({
         {state.errors?.folderPath && <span className={ui.errorText}>{state.errors.folderPath}</span>}
       </label>
 
-      <label className={ui.label}>
+      <div className={ui.label}>
         Media type
-        <select
-          name="mediaType"
-          defaultValue={values.mediaType ?? initial?.mediaType ?? 'PHOTO'}
-          required
-          className={ui.input}
-        >
-          <option value="PHOTO">Photo</option>
-          <option value="VIDEO">Video</option>
-          <option value="MIXED">Mixed</option>
-          <option value="OTHER">Other</option>
-        </select>
+        <div className={ui.radioGroup}>
+          {MEDIA_TYPE_OPTIONS.map((option) => (
+            <label key={option.value} className={ui.radioOption}>
+              <input
+                type="radio"
+                name="mediaType"
+                value={option.value}
+                defaultChecked={(values.mediaType ?? initial?.mediaType ?? 'PHOTO') === option.value}
+                required
+                className={ui.radioInput}
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
         {state.errors?.mediaType && <span className={ui.errorText}>{state.errors.mediaType}</span>}
-      </label>
+      </div>
 
       <label className={ui.label}>
         Description

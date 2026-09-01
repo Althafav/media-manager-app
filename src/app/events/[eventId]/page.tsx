@@ -35,18 +35,28 @@ export default async function EventDetailPage({
   searchParams,
 }: {
   params: Promise<{ eventId: string }>
-  searchParams: Promise<{ added?: string; q?: string; status?: string }>
+  searchParams: Promise<{
+    added?: string
+    sessionAdded?: string
+    sessionDeleted?: string
+    q?: string
+    status?: string
+    day?: string
+  }>
 }) {
   const { eventId } = await params
-  const { added, q, status } = await searchParams
+  const { added, sessionAdded, sessionDeleted, q, status, day } = await searchParams
 
   const event = await getEventWithSessionTree(eventId)
 
   if (!event) notFound()
 
+  const availableDays = [...new Set(event.sessions.map((session) => session.date.toISOString().slice(0, 10)))].sort()
+
   const query = q?.trim().toLowerCase() ?? ''
   const filteredSessions = event.sessions.filter((session) => {
     if (status && session.status !== status) return false
+    if (day && session.date.toISOString().slice(0, 10) !== day) return false
     if (query && !session.name.toLowerCase().includes(query)) return false
     return true
   })
@@ -65,13 +75,20 @@ export default async function EventDetailPage({
       </Link>
       <h1 className={ui.h1}>{event.name}</h1>
       {added && <p className={`${ui.bannerOk} mt-3`}>Event added and synced from the agenda API.</p>}
+      {sessionAdded && <p className={`${ui.bannerOk} mt-3`}>Session added.</p>}
+      {sessionDeleted && <p className={`${ui.bannerOk} mt-3`}>Session deleted.</p>}
       <p className={`${ui.muted} mt-2`}>Storage: {event.storage}</p>
 
-      <form action={resyncEvent.bind(null, event.id)} className="mt-4 mb-4">
-        <button type="submit" className={ui.button}>
-          Sync agenda
-        </button>
-      </form>
+      <div className="flex gap-2.5 mt-4 mb-4">
+        <form action={resyncEvent.bind(null, event.id)}>
+          <button type="submit" className={ui.button}>
+            Sync agenda
+          </button>
+        </form>
+        <Link href={`/events/${event.id}/sessions/new`}>
+          <button className={ui.button}>Add session</button>
+        </Link>
+      </div>
 
       <Link
         href={`/events/${event.id}/media-locations`}
@@ -98,6 +115,17 @@ export default async function EventDetailPage({
             {SESSION_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {SESSION_STATUS_LABELS[s]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={ui.label}>
+          Day
+          <select name="day" defaultValue={day ?? ''} className={ui.input}>
+            <option value="">Any</option>
+            {availableDays.map((d) => (
+              <option key={d} value={d}>
+                {formatDate(new Date(`${d}T00:00:00`))}
               </option>
             ))}
           </select>
@@ -146,6 +174,9 @@ export default async function EventDetailPage({
                                 <span className={ui.badgeClasses(`${sessionStatusBadgeClasses(session.status)} ml-1.5`)}>
                                   {SESSION_STATUS_LABELS[session.status]}
                                 </span>
+                              )}
+                              {session.isManual && (
+                                <span className={ui.badgeClasses('bg-rule text-ink ml-1.5')}>Manual</span>
                               )}
                             </td>
                             <td className={`${ui.td} whitespace-nowrap`}>

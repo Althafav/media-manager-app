@@ -103,7 +103,7 @@ export async function syncAgendaForEvent(eventExternalId: string, eventName?: st
       }
 
       const { count: sessionsDeactivated } = await tx.session.updateMany({
-        where: { eventId: event.id, externalId: { notIn: seenExternalIds }, isActive: true },
+        where: { eventId: event.id, externalId: { notIn: seenExternalIds }, isActive: true, isManual: false },
         data: { isActive: false },
       })
       // MediaLocation rows are never read or written here — sync must never touch them.
