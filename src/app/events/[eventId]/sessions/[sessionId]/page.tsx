@@ -9,6 +9,7 @@ import { updateSessionStatus } from './actions'
 import { deleteSession } from '../actions'
 import { CopyButton } from '@/components/CopyButton'
 import { ConfirmSubmitButton } from '@/components/ConfirmSubmitButton'
+import { DeleteMediaLocationForm } from '@/components/DeleteMediaLocationForm'
 
 const SESSION_STATUSES = Object.values(SessionStatus)
 
@@ -17,14 +18,16 @@ export default async function SessionDetailPage({
   searchParams,
 }: {
   params: Promise<{ eventId: string; sessionId: string }>
-  searchParams: Promise<{ statusUpdated?: string; updated?: string }>
+  searchParams: Promise<{ statusUpdated?: string; updated?: string; mediaDeleted?: string }>
 }) {
   const { eventId, sessionId } = await params
-  const { statusUpdated, updated } = await searchParams
+  const { statusUpdated, updated, mediaDeleted } = await searchParams
 
   const session = await getSessionDetail(sessionId)
 
   if (!session || session.eventId !== eventId) notFound()
+
+  const returnTo = `/events/${eventId}/sessions/${sessionId}`
 
   return (
     <div className={ui.page}>
@@ -34,6 +37,7 @@ export default async function SessionDetailPage({
       <h1 className={ui.h1}>{session.name}</h1>
       {statusUpdated && <p className={`${ui.bannerOk} mt-3`}>Session status updated.</p>}
       {updated && <p className={`${ui.bannerOk} mt-3`}>Session updated.</p>}
+      {mediaDeleted && <p className={`${ui.bannerOk} mt-3`}>Media location deleted.</p>}
       <div className="mt-2">
         <span className={ui.badgeClasses(sessionStatusBadgeClasses(session.status))}>
           {SESSION_STATUS_LABELS[session.status]}
@@ -106,12 +110,20 @@ export default async function SessionDetailPage({
                 ))}
               </p>
             )}
-            <Link
-              href={`/events/${eventId}/media-locations/${ml.id}/edit`}
-              className="mt-2.5 inline-block hover:underline hover:decoration-accent hover:decoration-2"
-            >
-              Edit
-            </Link>
+            <div className="mt-2.5 flex items-center gap-3">
+              <Link
+                href={`/events/${eventId}/media-locations/${ml.id}/edit`}
+                className="hover:underline hover:decoration-accent hover:decoration-2"
+              >
+                Edit
+              </Link>
+              <DeleteMediaLocationForm
+                mediaLocationId={ml.id}
+                eventId={eventId}
+                returnTo={returnTo}
+                className="text-sm text-danger hover:underline hover:decoration-accent hover:decoration-2"
+              />
+            </div>
           </div>
         ))
       )}

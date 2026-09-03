@@ -7,6 +7,11 @@ const displayFont = Big_Shoulders_Stencil({
   variable: "--display-font",
   weight: ["600", "700", "800"],
   subsets: ["latin"],
+  // Next.js has no font-metrics override data for this font, so it can't compute an
+  // automatic size-matched fallback (logs a warning and skips it either way) — disable
+  // that attempt and provide a plain fallback stack instead.
+  adjustFontFallback: false,
+  fallback: ["system-ui", "sans-serif"],
 });
 
 const bodyFont = IBM_Plex_Sans({

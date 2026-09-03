@@ -5,6 +5,14 @@ import { SessionForm } from '@/components/SessionForm'
 import { createSession } from '../actions'
 import * as ui from '@/lib/ui'
 
+function todayDateString() {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export default async function NewSessionPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params
 
@@ -24,6 +32,7 @@ export default async function NewSessionPage({ params }: { params: Promise<{ eve
         eventId={event.id}
         rooms={eventWithLookups?.rooms ?? []}
         tracks={eventWithLookups?.tracks ?? []}
+        initial={{ date: todayDateString() }}
       />
     </div>
   )

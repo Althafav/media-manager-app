@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getEventWithActiveSessions, getMediaLocation } from '@/lib/data'
 import { MediaLocationForm } from '@/components/MediaLocationForm'
+import { DeleteMediaLocationForm } from '@/components/DeleteMediaLocationForm'
 import { updateMediaLocation } from '../../actions'
 import * as ui from '@/lib/ui'
 
@@ -39,6 +40,14 @@ export default async function EditMediaLocationPage({
           tags: mediaLocation.tags,
         }}
       />
+      <div className="mt-4">
+        <DeleteMediaLocationForm
+          mediaLocationId={mediaLocation.id}
+          eventId={event.id}
+          returnTo={`/events/${event.id}/media-locations`}
+          className="font-mono text-[0.8rem] font-medium tracking-wider uppercase px-4 py-2.5 border border-danger rounded-[2px] bg-transparent text-danger cursor-pointer w-fit transition-colors duration-150 hover:bg-danger hover:text-paper"
+        />
+      </div>
     </div>
   )
 }

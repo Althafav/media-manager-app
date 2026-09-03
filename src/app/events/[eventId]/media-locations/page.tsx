@@ -4,6 +4,7 @@ import { getEventBasic, getMediaLocations } from "@/lib/data";
 import * as ui from "@/lib/ui";
 import { mediaTypeBadgeClasses } from "@/lib/media-type-badge";
 import { CopyButton } from "@/components/CopyButton";
+import { DeleteMediaLocationForm } from "@/components/DeleteMediaLocationForm";
 
 export default async function MediaLocationsPage({
   params,
@@ -16,15 +17,23 @@ export default async function MediaLocationsPage({
     sessionId?: string;
     added?: string;
     updated?: string;
+    deleted?: string;
   }>;
 }) {
   const { eventId } = await params;
-  const { q, mediaType, sessionId, added, updated } = await searchParams;
+  const { q, mediaType, sessionId, added, updated, deleted } = await searchParams;
 
   const event = await getEventBasic(eventId);
   if (!event) notFound();
 
   const mediaLocations = await getMediaLocations(event.id, { q, mediaType, sessionId });
+
+  const filterParams = new URLSearchParams();
+  if (q) filterParams.set("q", q);
+  if (mediaType) filterParams.set("mediaType", mediaType);
+  if (sessionId) filterParams.set("sessionId", sessionId);
+  const filterQuery = filterParams.toString();
+  const returnTo = `/events/${event.id}/media-locations${filterQuery ? `?${filterQuery}` : ""}`;
 
   return (
     <div className={ui.page}>
@@ -34,6 +43,7 @@ export default async function MediaLocationsPage({
       <h1 className={ui.h1}>Media Locations</h1>
       {added && <p className={`${ui.bannerOk} mt-3`}>Media location added.</p>}
       {updated && <p className={`${ui.bannerOk} mt-3`}>Changes saved.</p>}
+      {deleted && <p className={`${ui.bannerOk} mt-3`}>Media location deleted.</p>}
       <p className={`${ui.muted} mt-2`}>Storage: {event.storage}</p>
       <div className="mt-5 mb-4">
         <Link href={`/events/${event.id}/media-locations/new`}>
@@ -100,12 +110,20 @@ export default async function MediaLocationsPage({
                 ))}
               </p>
             )}
-            <Link
-              href={`/events/${event.id}/media-locations/${ml.id}/edit`}
-              className="mt-2.5 inline-block hover:underline hover:decoration-accent hover:decoration-2"
-            >
-              Edit
-            </Link>
+            <div className="mt-2.5 flex items-center gap-3">
+              <Link
+                href={`/events/${event.id}/media-locations/${ml.id}/edit`}
+                className="hover:underline hover:decoration-accent hover:decoration-2"
+              >
+                Edit
+              </Link>
+              <DeleteMediaLocationForm
+                mediaLocationId={ml.id}
+                eventId={event.id}
+                returnTo={returnTo}
+                className="text-sm text-danger hover:underline hover:decoration-accent hover:decoration-2"
+              />
+            </div>
           </div>
         ))
       )}

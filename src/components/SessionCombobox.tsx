@@ -27,18 +27,14 @@ export function SessionCombobox({
     function handleClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false)
-        reconcileQuery()
+        const current = sessions.find((s) => s.id === selectedId)
+        setQuery(current ? current.name : '')
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, selectedId])
-
-  function reconcileQuery() {
-    const current = sessions.find((s) => s.id === selectedId)
-    setQuery(current ? current.name : '')
-  }
 
   function selectSession(s: SessionOption) {
     setSelectedId(s.id)
@@ -53,6 +49,7 @@ export function SessionCombobox({
         type="text"
         role="combobox"
         aria-expanded={open}
+        aria-controls="session-combobox-list"
         placeholder="Search sessions…"
         value={query}
         onFocus={() => setOpen(true)}
@@ -64,7 +61,11 @@ export function SessionCombobox({
         className={ui.input}
       />
       {open && (
-        <ul className="absolute z-10 mt-1 w-full max-h-56 overflow-auto border border-rule bg-paper shadow-sm">
+        <ul
+          id="session-combobox-list"
+          role="listbox"
+          className="absolute z-10 mt-1 w-full max-h-56 overflow-auto border border-rule bg-paper shadow-sm"
+        >
           {filtered.map((s) => (
             <li
               key={s.id}

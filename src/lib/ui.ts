@@ -54,3 +54,28 @@ export const radioGroup = "flex flex-wrap gap-4";
 export const radioOption =
   "inline-flex items-center gap-1.5 font-sans normal-case tracking-normal text-sm text-ink";
 export const radioInput = "accent-accent-ink";
+
+export const filterBar =
+  "flex flex-col gap-2.5 mb-4 px-4 py-3.5 bg-paper-card border border-rule md:flex-row md:flex-wrap md:items-end";
+
+export const dayChipStrip =
+  "flex gap-2 overflow-x-auto -mx-5 px-5 pb-2 mb-4 md:flex-wrap md:overflow-visible md:mx-0 md:px-0 md:pb-0";
+export const dayChip =
+  "clip-tag-sm shrink-0 inline-flex items-center gap-1.5 h-9 pl-4 pr-3 font-mono text-xs font-medium tracking-wider uppercase whitespace-nowrap transition-colors border";
+export const dayChipInactive = "border-rule bg-paper-card text-ink-soft hover:border-accent-ink hover:text-ink";
+export const dayChipActive = "border-accent-ink bg-accent-ink text-paper";
+
+export const sessionList = "flex flex-col divide-y divide-rule";
+export const sessionRow = "py-1";
+export const sessionRowSummary =
+  "list-none cursor-pointer flex flex-col gap-1.5 min-h-11 py-2.5 px-1 md:flex-row md:items-center md:gap-3 hover:bg-accent/5";
+export const sessionRowTime = "font-mono text-xs text-ink-soft whitespace-nowrap";
+export const sessionRowBody = "px-1 pb-4 pt-1";
+
+export const quickAddForm = "flex flex-col gap-2.5 mt-2 pt-3 border-t border-rule";
+export const quickAddRow = "flex flex-col gap-2.5 md:flex-row md:items-center";
+export const quickAddMoreToggle =
+  "font-mono text-xs text-ink-soft underline decoration-dotted w-fit hover:text-accent";
+
+export const iconButton =
+  "inline-flex items-center justify-center w-6 h-6 text-ink-soft border border-rule rounded-[2px] bg-paper-card hover:text-accent hover:border-accent transition-colors";

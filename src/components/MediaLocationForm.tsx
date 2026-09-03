@@ -4,16 +4,10 @@ import { useActionState } from 'react'
 import { TagInput } from '@/components/TagInput'
 import { SessionCombobox } from '@/components/SessionCombobox'
 import type { MediaLocationFormState } from '@/app/events/[eventId]/media-locations/actions'
+import { MEDIA_TYPE_OPTIONS } from '@/lib/media-type-options'
 import * as ui from '@/lib/ui'
 
 type SessionOption = { id: string; name: string }
-
-const MEDIA_TYPE_OPTIONS = [
-  { value: 'PHOTO', label: 'Photo' },
-  { value: 'VIDEO', label: 'Video' },
-  { value: 'MIXED', label: 'Mixed' },
-  { value: 'OTHER', label: 'Other' },
-] as const
 
 export function MediaLocationForm({
   action,
