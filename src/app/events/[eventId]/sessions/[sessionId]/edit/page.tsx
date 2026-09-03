@@ -1,7 +1,7 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getSessionDetail, getEventRoomsAndTracks } from '@/lib/data'
 import { SessionForm } from '@/components/SessionForm'
+import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { updateSession } from '../../actions'
 import * as ui from '@/lib/ui'
 
@@ -20,9 +20,15 @@ export default async function EditSessionPage({
 
   return (
     <div className={ui.page}>
-      <Link href={`/events/${eventId}/sessions/${sessionId}`} className={ui.backLink}>
-        &larr; {session.name}
-      </Link>
+      <Breadcrumbs
+        items={[
+          { label: 'Events', href: '/events' },
+          { label: session.event.name, href: `/events/${eventId}` },
+          { label: 'Sessions', href: `/events/${eventId}/sessions` },
+          { label: session.name, href: `/events/${eventId}/sessions/${sessionId}` },
+          { label: 'Edit' },
+        ]}
+      />
       <h1 className={ui.h1}>Edit session</h1>
       <SessionForm
         action={updateSession.bind(null, sessionId)}

@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation'
-import { getEventBasic, getEventRoomsAndTracks } from '@/lib/data'
-import { SessionForm } from '@/components/SessionForm'
+import { getEventBasic } from '@/lib/data'
+import { OtherItemForm } from '@/components/OtherItemForm'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
-import { createSession } from '../actions'
+import { createOtherItem } from '../actions'
 import * as ui from '@/lib/ui'
 
 function todayDateString() {
@@ -13,13 +13,11 @@ function todayDateString() {
   return `${year}-${month}-${day}`
 }
 
-export default async function NewSessionPage({ params }: { params: Promise<{ eventId: string }> }) {
+export default async function NewOtherItemPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params
 
   const event = await getEventBasic(eventId)
   if (!event) notFound()
-
-  const eventWithLookups = await getEventRoomsAndTracks(eventId)
 
   return (
     <div className={ui.page}>
@@ -27,18 +25,12 @@ export default async function NewSessionPage({ params }: { params: Promise<{ eve
         items={[
           { label: 'Events', href: '/events' },
           { label: event.name, href: `/events/${event.id}` },
-          { label: 'Sessions', href: `/events/${event.id}/sessions` },
+          { label: 'Other Items', href: `/events/${event.id}/other-items` },
           { label: 'Add' },
         ]}
       />
-      <h1 className={ui.h1}>Add session</h1>
-      <SessionForm
-        action={createSession}
-        eventId={event.id}
-        rooms={eventWithLookups?.rooms ?? []}
-        tracks={eventWithLookups?.tracks ?? []}
-        initial={{ date: todayDateString() }}
-      />
+      <h1 className={ui.h1}>Add item</h1>
+      <OtherItemForm action={createOtherItem} eventId={event.id} initial={{ date: todayDateString() }} />
     </div>
   )
 }

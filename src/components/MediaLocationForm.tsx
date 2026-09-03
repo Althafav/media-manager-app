@@ -2,24 +2,30 @@
 
 import { useActionState } from 'react'
 import { TagInput } from '@/components/TagInput'
-import { SessionCombobox } from '@/components/SessionCombobox'
+import { LinkPicker } from '@/components/LinkPicker'
 import type { MediaLocationFormState } from '@/app/events/[eventId]/media-locations/actions'
 import { MEDIA_TYPE_OPTIONS } from '@/lib/media-type-options'
 import * as ui from '@/lib/ui'
 
-type SessionOption = { id: string; name: string }
+type Option = { id: string; name: string }
 
 export function MediaLocationForm({
   action,
   eventId,
   sessions,
+  booths,
+  otherItems,
   initial,
 }: {
   action: (state: MediaLocationFormState, formData: FormData) => Promise<MediaLocationFormState>
   eventId: string
-  sessions: SessionOption[]
+  sessions: Option[]
+  booths: Option[]
+  otherItems: Option[]
   initial?: {
     sessionId?: string
+    boothId?: string
+    otherItemId?: string
     folderPath?: string
     mediaType?: string
     description?: string
@@ -40,13 +46,20 @@ export function MediaLocationForm({
       <input type="hidden" name="eventId" value={eventId} />
 
       <div className={ui.label}>
-        Session (optional)
-        <SessionCombobox
-          name="sessionId"
+        Link to (optional)
+        <LinkPicker
           sessions={sessions}
+          booths={booths}
+          otherItems={otherItems}
           defaultSessionId={values.sessionId ?? initial?.sessionId ?? ''}
+          defaultBoothId={values.boothId ?? initial?.boothId ?? ''}
+          defaultOtherItemId={values.otherItemId ?? initial?.otherItemId ?? ''}
         />
-        {state.errors?.sessionId && <span className={ui.errorText}>{state.errors.sessionId}</span>}
+        {(state.errors?.sessionId ?? state.errors?.boothId ?? state.errors?.otherItemId) && (
+          <span className={ui.errorText}>
+            {state.errors?.sessionId ?? state.errors?.boothId ?? state.errors?.otherItemId}
+          </span>
+        )}
       </div>
 
       <label className={ui.label}>

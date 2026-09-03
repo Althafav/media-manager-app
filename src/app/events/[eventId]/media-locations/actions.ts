@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { mediaLocationInputSchema } from '@/lib/validation/media-location'
 
 export type MediaLocationFormState = {
-  errors?: Partial<Record<'folderPath' | 'mediaType' | 'sessionId' | 'form', string>>
+  errors?: Partial<Record<'folderPath' | 'mediaType' | 'sessionId' | 'boothId' | 'otherItemId' | 'form', string>>
   values?: Record<string, string>
 }
 
@@ -17,6 +17,8 @@ function parseForm(formData: FormData) {
   const raw = {
     eventId: String(formData.get('eventId') ?? ''),
     sessionId: String(formData.get('sessionId') ?? ''),
+    boothId: String(formData.get('boothId') ?? ''),
+    otherItemId: String(formData.get('otherItemId') ?? ''),
     folderPath: String(formData.get('folderPath') ?? ''),
     mediaType: String(formData.get('mediaType') ?? ''),
     description: String(formData.get('description') ?? ''),
@@ -53,12 +55,26 @@ function withMediaDeleted(path: string) {
   return `${path}${separator}mediaDeleted=1`
 }
 
+// Booth/item pages don't need to scroll/auto-expand to a specific row (unlike the event page's
+// per-session accordions), so these just carry a boolean flag for the success banner.
+function withMediaAddedFlag(path: string) {
+  const separator = path.includes('?') ? '&' : '?'
+  return `${path}${separator}mediaAdded=1`
+}
+
+function withMediaUpdatedFlag(path: string) {
+  const separator = path.includes('?') ? '&' : '?'
+  return `${path}${separator}mediaUpdated=1`
+}
+
 function fieldErrorsFrom(parsed: ParseFailure): MediaLocationFormState['errors'] {
   const fieldErrors = parsed.error.flatten().fieldErrors
   return {
     folderPath: fieldErrors.folderPath?.[0],
     mediaType: fieldErrors.mediaType?.[0],
     sessionId: fieldErrors.sessionId?.[0],
+    boothId: fieldErrors.boothId?.[0],
+    otherItemId: fieldErrors.otherItemId?.[0],
   }
 }
 
@@ -79,13 +95,22 @@ export async function createMediaLocation(
   updateTag(`event:${parsed.data.eventId}`)
   updateTag(`media-locations:${parsed.data.eventId}`)
   if (parsed.data.sessionId) updateTag(`session:${parsed.data.sessionId}`)
+  if (parsed.data.boothId) updateTag(`booth:${parsed.data.boothId}`)
+  if (parsed.data.otherItemId) updateTag(`other-item:${parsed.data.otherItemId}`)
 
   const returnTo = resolveReturnTo(raw.returnTo, parsed.data.eventId)
   revalidatePath(returnTo ?? `/events/${parsed.data.eventId}/media-locations`)
   if (parsed.data.sessionId) {
     revalidatePath(`/events/${parsed.data.eventId}/sessions/${parsed.data.sessionId}`)
   }
+  if (parsed.data.boothId) {
+    revalidatePath(`/events/${parsed.data.eventId}/booths/${parsed.data.boothId}`)
+  }
+  if (parsed.data.otherItemId) {
+    revalidatePath(`/events/${parsed.data.eventId}/other-items/${parsed.data.otherItemId}`)
+  }
   if (returnTo && parsed.data.sessionId) redirect(withMediaAdded(returnTo, parsed.data.sessionId))
+  if (returnTo && (parsed.data.boothId || parsed.data.otherItemId)) redirect(withMediaAddedFlag(returnTo))
   if (returnTo) redirect(returnTo)
   redirect(`/events/${parsed.data.eventId}/media-locations?added=1`)
 }
@@ -99,12 +124,16 @@ export async function updateMediaLocation(
   if (!parsed.success) return { values: raw, errors: fieldErrorsFrom(parsed) }
 
   let previousSessionId: string | null = null
+  let previousBoothId: string | null = null
+  let previousOtherItemId: string | null = null
   try {
     const existing = await prisma.mediaLocation.findUnique({
       where: { id: mediaLocationId },
-      select: { sessionId: true },
+      select: { sessionId: true, boothId: true, otherItemId: true },
     })
     previousSessionId = existing?.sessionId ?? null
+    previousBoothId = existing?.boothId ?? null
+    previousOtherItemId = existing?.otherItemId ?? null
     await prisma.mediaLocation.update({ where: { id: mediaLocationId }, data: parsed.data })
   } catch {
     return { values: raw, errors: { form: 'Could not save changes. Please try again.' } }
@@ -118,12 +147,33 @@ export async function updateMediaLocation(
   if (previousSessionId && previousSessionId !== parsed.data.sessionId) {
     updateTag(`session:${previousSessionId}`)
   }
+  if (parsed.data.boothId) updateTag(`booth:${parsed.data.boothId}`)
+  if (previousBoothId && previousBoothId !== parsed.data.boothId) {
+    updateTag(`booth:${previousBoothId}`)
+  }
+  if (parsed.data.otherItemId) updateTag(`other-item:${parsed.data.otherItemId}`)
+  if (previousOtherItemId && previousOtherItemId !== parsed.data.otherItemId) {
+    updateTag(`other-item:${previousOtherItemId}`)
+  }
   const returnTo = resolveReturnTo(raw.returnTo, parsed.data.eventId)
   revalidatePath(returnTo ?? `/events/${parsed.data.eventId}/media-locations`)
   if (parsed.data.sessionId) {
     revalidatePath(`/events/${parsed.data.eventId}/sessions/${parsed.data.sessionId}`)
   }
+  if (parsed.data.boothId) {
+    revalidatePath(`/events/${parsed.data.eventId}/booths/${parsed.data.boothId}`)
+  }
+  if (previousBoothId && previousBoothId !== parsed.data.boothId) {
+    revalidatePath(`/events/${parsed.data.eventId}/booths/${previousBoothId}`)
+  }
+  if (parsed.data.otherItemId) {
+    revalidatePath(`/events/${parsed.data.eventId}/other-items/${parsed.data.otherItemId}`)
+  }
+  if (previousOtherItemId && previousOtherItemId !== parsed.data.otherItemId) {
+    revalidatePath(`/events/${parsed.data.eventId}/other-items/${previousOtherItemId}`)
+  }
   if (returnTo && parsed.data.sessionId) redirect(withMediaUpdated(returnTo, parsed.data.sessionId))
+  if (returnTo && (parsed.data.boothId || parsed.data.otherItemId)) redirect(withMediaUpdatedFlag(returnTo))
   if (returnTo) redirect(returnTo)
   redirect(`/events/${parsed.data.eventId}/media-locations?updated=1`)
 }
@@ -134,7 +184,7 @@ export async function deleteMediaLocation(mediaLocationId: string, formData: For
 
   const existing = await prisma.mediaLocation.findUnique({
     where: { id: mediaLocationId },
-    select: { eventId: true, sessionId: true },
+    select: { eventId: true, sessionId: true, boothId: true, otherItemId: true },
   })
   const resolvedEventId = existing?.eventId ?? eventId
 
@@ -148,6 +198,14 @@ export async function deleteMediaLocation(mediaLocationId: string, formData: For
     if (existing.sessionId) {
       updateTag(`session:${existing.sessionId}`)
       revalidatePath(`/events/${existing.eventId}/sessions/${existing.sessionId}`)
+    }
+    if (existing.boothId) {
+      updateTag(`booth:${existing.boothId}`)
+      revalidatePath(`/events/${existing.eventId}/booths/${existing.boothId}`)
+    }
+    if (existing.otherItemId) {
+      updateTag(`other-item:${existing.otherItemId}`)
+      revalidatePath(`/events/${existing.eventId}/other-items/${existing.otherItemId}`)
     }
   }
 

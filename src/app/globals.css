@@ -3,35 +3,39 @@
 /*
   Design concept: a digital DIT media log -- the paper camera/sound report
   a set's Digital Imaging Technician fills in to record which card went to
-  which drive. Ledger paper, stencil-cut labels, one gaffer-tape orange.
-  Palette lives on CSS variables (switched by prefers-color-scheme) and is
-  mapped into Tailwind's theme below, so utilities like `bg-paper` or
-  `text-ink-soft` resolve to the right value in both light and dark mode.
+  which drive. Kraft ledger paper, stencil-cut labels, and a tally-light
+  semaphore borrowed from recording-deck indicators: amber (--accent) for
+  brand/primary actions, green (--ok) for "logged", red (--danger) for
+  "missing" -- kept as three distinct hues so coverage status never reads
+  as a UI accent color and vice versa. Palette lives on CSS variables
+  (switched by prefers-color-scheme) and is mapped into Tailwind's theme
+  below, so utilities like `bg-paper` or `text-ink-soft` resolve to the
+  right value in both light and dark mode.
 */
 
 :root {
-  --paper: #e7e9e2;
-  --paper-card: #f3f2ea;
-  --ink: #201f1c;
-  --ink-soft: #55534a;
-  --accent: #e2571c;
-  --accent-ink: #24413d;
-  --rule: #b7b2a0;
-  --ok: #3c7a52;
-  --danger: #b23a2e;
+  --paper: #ede7d9;
+  --paper-card: #f8f4e9;
+  --ink: #221f1a;
+  --ink-soft: #6e6455;
+  --accent: #d97b29;
+  --accent-ink: #3a2e22;
+  --rule: #c9c0a8;
+  --ok: #3f7a4c;
+  --danger: #b23226;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #171813;
-    --paper-card: #201f1a;
-    --ink: #ece8dc;
-    --ink-soft: #a8a290;
-    --accent: #f0682f;
-    --accent-ink: #7fb3aa;
-    --rule: #3c3a30;
-    --ok: #63b184;
-    --danger: #e07463;
+    --paper: #17140f;
+    --paper-card: #211c14;
+    --ink: #efe7d6;
+    --ink-soft: #a79c87;
+    --accent: #e8934a;
+    --accent-ink: #c9ae84;
+    --rule: #3a342a;
+    --ok: #5fae72;
+    --danger: #e2685a;
   }
 
   html {

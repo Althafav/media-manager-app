@@ -1,0 +1,44 @@
+import Link from 'next/link'
+import * as ui from '@/lib/ui'
+
+type CoverageEntry = {
+  kind: 'session' | 'booth' | 'other-item'
+  id: string
+  name: string
+  logged: boolean
+}
+
+const SECTION_PATH_FOR_KIND: Record<CoverageEntry['kind'], string> = {
+  session: 'sessions',
+  booth: 'booths',
+  'other-item': 'other-items',
+}
+
+// The signature device: one mark per session/booth/item in the event, green if it has
+// footage logged, red if it doesn't — a tally strip in the shape of exposed/unexposed
+// film frames. This is the app's actual job made visible in one glance.
+export function CoverageStrip({ eventId, entries }: { eventId: string; entries: CoverageEntry[] }) {
+  if (entries.length === 0) return null
+
+  const loggedCount = entries.filter((entry) => entry.logged).length
+  const missingCount = entries.length - loggedCount
+
+  return (
+    <div className="mb-6">
+      <p className="font-mono text-xs font-medium tracking-wider uppercase text-ink-soft mb-1.5">
+        {loggedCount} logged &middot; {missingCount} missing
+      </p>
+      <div className={ui.dayChipStrip}>
+        {entries.map((entry) => (
+          <Link
+            key={`${entry.kind}-${entry.id}`}
+            href={`/events/${eventId}/${SECTION_PATH_FOR_KIND[entry.kind]}?open=${entry.id}#${entry.kind}-${entry.id}`}
+            title={entry.name}
+            aria-label={`${entry.name} — ${entry.logged ? 'logged' : 'missing'}`}
+            className={`shrink-0 w-3 h-8 transition-opacity hover:opacity-75 ${entry.logged ? 'bg-ok' : 'bg-danger'}`}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}

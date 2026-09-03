@@ -8,6 +8,18 @@ export const mediaLocationInputSchema = z.object({
     .optional()
     .or(z.literal(''))
     .transform((v) => v || undefined),
+  boothId: z
+    .string()
+    .cuid()
+    .optional()
+    .or(z.literal(''))
+    .transform((v) => v || undefined),
+  otherItemId: z
+    .string()
+    .cuid()
+    .optional()
+    .or(z.literal(''))
+    .transform((v) => v || undefined),
   folderPath: z.string().min(1).max(1000),
   mediaType: z.enum(['PHOTO', 'VIDEO', 'MIXED', 'OTHER']),
   description: z
@@ -31,6 +43,9 @@ export const mediaLocationInputSchema = z.object({
         .map((t) => t.trim())
         .filter(Boolean)
     ),
+}).refine((data) => [data.sessionId, data.boothId, data.otherItemId].filter(Boolean).length <= 1, {
+  message: 'A media location can only be linked to one of session, booth, or item',
+  path: ['otherItemId'],
 })
 
 export type MediaLocationInput = z.infer<typeof mediaLocationInputSchema>

@@ -22,11 +22,15 @@ type Location = {
 export function MediaLocationEntry({
   eventId,
   sessionId,
+  boothId,
+  otherItemId,
   returnTo,
   location,
 }: {
   eventId: string
-  sessionId: string
+  sessionId?: string
+  boothId?: string
+  otherItemId?: string
   returnTo: string
   location: Location
 }) {
@@ -60,7 +64,9 @@ export function MediaLocationEntry({
   return (
     <form action={formAction} className={ui.quickAddForm}>
       <input type="hidden" name="eventId" value={eventId} />
-      <input type="hidden" name="sessionId" value={sessionId} />
+      {sessionId && <input type="hidden" name="sessionId" value={sessionId} />}
+      {boothId && <input type="hidden" name="boothId" value={boothId} />}
+      {otherItemId && <input type="hidden" name="otherItemId" value={otherItemId} />}
       <input type="hidden" name="returnTo" value={values.returnTo ?? returnTo} />
 
       <div className={ui.quickAddRow}>

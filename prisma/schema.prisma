@@ -16,6 +16,8 @@ model Event {
   name           String
   storage        String          @default("")
   sessions       Session[]
+  booths         Booth[]
+  otherItems     OtherItem[]
   tracks         Track[]
   rooms          Room[]
   mediaLocations MediaLocation[]
@@ -72,22 +74,55 @@ model Session {
   @@index([eventId, date])
 }
 
+model Booth {
+  id             String          @id @default(cuid())
+  eventId        String
+  event          Event           @relation(fields: [eventId], references: [id])
+  name           String
+  mediaLocations MediaLocation[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([eventId])
+}
+
+model OtherItem {
+  id             String          @id @default(cuid())
+  eventId        String
+  event          Event           @relation(fields: [eventId], references: [id])
+  name           String
+  description    String?
+  date           DateTime
+  time           String
+  mediaLocations MediaLocation[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([eventId])
+}
+
 model MediaLocation {
-  id          String    @id @default(cuid())
+  id          String     @id @default(cuid())
   eventId     String
-  event       Event     @relation(fields: [eventId], references: [id])
+  event       Event      @relation(fields: [eventId], references: [id])
   sessionId   String?
-  session     Session?  @relation(fields: [sessionId], references: [id])
+  session     Session?   @relation(fields: [sessionId], references: [id])
+  boothId     String?
+  booth       Booth?     @relation(fields: [boothId], references: [id])
+  otherItemId String?
+  otherItem   OtherItem? @relation(fields: [otherItemId], references: [id])
   folderPath  String
   mediaType   MediaType
   description String?
   notes       String?
-  tags        String[]  @default([])
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  tags        String[]   @default([])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   @@index([eventId])
   @@index([sessionId])
+  @@index([boothId])
+  @@index([otherItemId])
 }
 
 enum MediaType {

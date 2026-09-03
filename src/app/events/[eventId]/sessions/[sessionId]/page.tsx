@@ -10,6 +10,7 @@ import { deleteSession } from '../actions'
 import { CopyButton } from '@/components/CopyButton'
 import { ConfirmSubmitButton } from '@/components/ConfirmSubmitButton'
 import { DeleteMediaLocationForm } from '@/components/DeleteMediaLocationForm'
+import { Breadcrumbs } from '@/components/Breadcrumbs'
 
 const SESSION_STATUSES = Object.values(SessionStatus)
 
@@ -31,10 +32,15 @@ export default async function SessionDetailPage({
 
   return (
     <div className={ui.page}>
-      <Link href={`/events/${eventId}`} className={ui.backLink}>
-        &larr; {session.event.name}
-      </Link>
-      <h1 className={ui.h1}>{session.name}</h1>
+      <Breadcrumbs
+        items={[
+          { label: 'Events', href: '/events' },
+          { label: session.event.name, href: `/events/${eventId}` },
+          { label: 'Sessions', href: `/events/${eventId}/sessions` },
+          { label: session.name },
+        ]}
+      />
+      <h1 className="text-3xl">{session.name}</h1>
       {statusUpdated && <p className={`${ui.bannerOk} mt-3`}>Session status updated.</p>}
       {updated && <p className={`${ui.bannerOk} mt-3`}>Session updated.</p>}
       {mediaDeleted && <p className={`${ui.bannerOk} mt-3`}>Media location deleted.</p>}

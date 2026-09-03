@@ -95,7 +95,8 @@ export async function createSession(_prevState: SessionFormState, formData: Form
   updateTag('events')
   updateTag(`event:${parsed.data.eventId}`)
   revalidatePath(`/events/${parsed.data.eventId}`)
-  redirect(`/events/${parsed.data.eventId}?sessionAdded=1`)
+  revalidatePath(`/events/${parsed.data.eventId}/sessions`)
+  redirect(`/events/${parsed.data.eventId}/sessions?sessionAdded=1`)
 }
 
 export async function updateSession(
@@ -134,6 +135,7 @@ export async function updateSession(
   updateTag(`event:${parsed.data.eventId}`)
   updateTag(`session:${sessionId}`)
   revalidatePath(`/events/${parsed.data.eventId}`)
+  revalidatePath(`/events/${parsed.data.eventId}/sessions`)
   revalidatePath(`/events/${parsed.data.eventId}/sessions/${sessionId}`)
   redirect(`/events/${parsed.data.eventId}/sessions/${sessionId}?updated=1`)
 }
@@ -157,6 +159,7 @@ export async function deleteSession(eventId: string, sessionId: string) {
   updateTag(`session:${sessionId}`)
   updateTag(`media-locations:${eventId}`)
   revalidatePath(`/events/${eventId}`)
+  revalidatePath(`/events/${eventId}/sessions`)
   revalidatePath(`/events/${eventId}/media-locations`)
-  redirect(`/events/${eventId}?sessionDeleted=1`)
+  redirect(`/events/${eventId}/sessions?sessionDeleted=1`)
 }

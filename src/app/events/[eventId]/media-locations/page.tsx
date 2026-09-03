@@ -15,23 +15,27 @@ export default async function MediaLocationsPage({
     q?: string;
     mediaType?: string;
     sessionId?: string;
+    boothId?: string;
+    otherItemId?: string;
     added?: string;
     updated?: string;
     deleted?: string;
   }>;
 }) {
   const { eventId } = await params;
-  const { q, mediaType, sessionId, added, updated, deleted } = await searchParams;
+  const { q, mediaType, sessionId, boothId, otherItemId, added, updated, deleted } = await searchParams;
 
   const event = await getEventBasic(eventId);
   if (!event) notFound();
 
-  const mediaLocations = await getMediaLocations(event.id, { q, mediaType, sessionId });
+  const mediaLocations = await getMediaLocations(event.id, { q, mediaType, sessionId, boothId, otherItemId });
 
   const filterParams = new URLSearchParams();
   if (q) filterParams.set("q", q);
   if (mediaType) filterParams.set("mediaType", mediaType);
   if (sessionId) filterParams.set("sessionId", sessionId);
+  if (boothId) filterParams.set("boothId", boothId);
+  if (otherItemId) filterParams.set("otherItemId", otherItemId);
   const filterQuery = filterParams.toString();
   const returnTo = `/events/${event.id}/media-locations${filterQuery ? `?${filterQuery}` : ""}`;
 
@@ -45,20 +49,26 @@ export default async function MediaLocationsPage({
       {updated && <p className={`${ui.bannerOk} mt-3`}>Changes saved.</p>}
       {deleted && <p className={`${ui.bannerOk} mt-3`}>Media location deleted.</p>}
       <p className={`${ui.muted} mt-2`}>Storage: {event.storage}</p>
-      <div className="mt-5 mb-4">
+      <div className="flex flex-wrap gap-2.5 mt-5 mb-4">
         <Link href={`/events/${event.id}/media-locations/new`}>
           <button className={ui.button}>Add media location</button>
         </Link>
+        <a href={`/events/${event.id}/media-locations/export`}>
+          <button className={ui.button}>Export to Excel</button>
+        </a>
       </div>
 
       <form className={ui.formInline}>
+        {sessionId && <input type="hidden" name="sessionId" value={sessionId} />}
+        {boothId && <input type="hidden" name="boothId" value={boothId} />}
+        {otherItemId && <input type="hidden" name="otherItemId" value={otherItemId} />}
         <label className={ui.label}>
           Search
           <input
             type="text"
             name="q"
             defaultValue={q}
-            placeholder="path, description, tag"
+            placeholder="path, description, tag, session, booth, item"
             className={ui.input}
           />
         </label>
@@ -97,6 +107,28 @@ export default async function MediaLocationsPage({
                   className="hover:underline hover:decoration-accent hover:decoration-2"
                 >
                   {ml.session.name}
+                </Link>
+              </p>
+            )}
+            {ml.booth && (
+              <p className={`${ui.muted} mt-2`}>
+                Booth:{" "}
+                <Link
+                  href={`/events/${event.id}/booths/${ml.booth.id}`}
+                  className="hover:underline hover:decoration-accent hover:decoration-2"
+                >
+                  {ml.booth.name}
+                </Link>
+              </p>
+            )}
+            {ml.otherItem && (
+              <p className={`${ui.muted} mt-2`}>
+                Item:{" "}
+                <Link
+                  href={`/events/${event.id}/other-items/${ml.otherItem.id}`}
+                  className="hover:underline hover:decoration-accent hover:decoration-2"
+                >
+                  {ml.otherItem.name}
                 </Link>
               </p>
             )}
