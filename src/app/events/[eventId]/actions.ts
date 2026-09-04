@@ -3,36 +3,13 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath, updateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
-import { syncAgendaForEvent } from '@/lib/sync/agenda-sync'
+import { performEventSync } from '@/lib/sync/perform-event-sync'
 import { updateEventStorageSchema } from '@/lib/validation/event'
 import { logActivity } from '@/lib/activity-log'
 
 export async function resyncEvent(eventId: string) {
-  const event = await prisma.event.findUniqueOrThrow({ where: { id: eventId } })
-
-  try {
-    await syncAgendaForEvent(event.externalId, event.name)
-  } catch (err) {
-    // syncAgendaForEvent runs inside its own transaction and throws before committing,
-    // so nothing changed here — safe to skip cache invalidation on this path.
-    console.error('Agenda resync failed', err)
-    redirect(`/events/${eventId}?syncFailed=1`)
-  }
-
-  await logActivity({
-    eventId,
-    action: 'SYNC',
-    message: 'Synced with the agenda API.',
-    entityType: 'event',
-    entityId: eventId,
-  })
-
-  updateTag('events')
-  updateTag(`event:${eventId}`)
-  updateTag(`activity:${eventId}`)
-  revalidatePath(`/events/${eventId}`)
-  revalidatePath(`/events/${eventId}/sessions`)
-  revalidatePath(`/events/${eventId}/activity`)
+  const result = await performEventSync(eventId)
+  if (!result.ok) redirect(`/events/${eventId}?syncFailed=1`)
   redirect(`/events/${eventId}?synced=1`)
 }
 

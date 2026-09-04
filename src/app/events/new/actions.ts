@@ -45,7 +45,7 @@ export async function createAndSyncEvent(_prevState: NewEventState, formData: Fo
 
   await logActivity({
     eventId,
-    action: 'SYNC',
+    action: 'CREATE',
     message: 'Event created and synced from the agenda API.',
     entityType: 'event',
     entityId: eventId,

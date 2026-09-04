@@ -37,6 +37,9 @@ export const tagChip =
 
 export const bannerOk = "px-3.5 py-2.5 mb-3 border-l-4 border-l-ok bg-ok/10 text-ok text-sm";
 export const bannerError = "px-3.5 py-2.5 mb-3 border-l-4 border-l-danger bg-danger/10 text-danger text-sm";
+export const bannerInfo =
+  "flex items-center gap-2 px-3.5 py-2.5 mb-3 border-l-4 border-l-accent-ink bg-accent-ink/10 text-accent-ink text-sm";
+export const spinner = "inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin";
 
 export const formStack =
   "flex flex-col gap-4 max-w-[520px] px-5 py-4 bg-paper-card border border-rule border-l-4 border-l-accent-ink";

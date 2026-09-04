@@ -4,6 +4,7 @@ import { getEventWithSessionTree } from '@/lib/data'
 import { resyncEvent } from './actions'
 import { CoverageStrip } from '@/components/CoverageStrip'
 import { EventStorageField } from '@/components/EventStorageField'
+import { AutoSyncOnVisit } from '@/components/AutoSyncOnVisit'
 import * as ui from '@/lib/ui'
 
 function countLogged(items: { mediaLocations: { id: string }[] }[]) {
@@ -79,6 +80,7 @@ export default async function EventDetailPage({
         &larr; Events
       </Link>
       <h1 className={ui.h1}>{event.name}</h1>
+      <AutoSyncOnVisit eventId={event.id} />
       {added && <p className={`${ui.bannerOk} mt-3`}>Event added and synced from the agenda API.</p>}
       {storageUpdated && <p className={`${ui.bannerOk} mt-3`}>Storage updated.</p>}
       {synced && <p className={`${ui.bannerOk} mt-3`}>Synced with the agenda API.</p>}

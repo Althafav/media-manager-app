@@ -6,9 +6,7 @@ import { mediaTypeBadgeClasses } from '@/lib/media-type-badge'
 import { sessionStatusBadgeClasses, SESSION_STATUS_LABELS } from '@/lib/session-status-badge'
 import { SessionStatus } from '@/generated/prisma/enums'
 import { updateSessionStatus } from './actions'
-import { deleteSession } from '../actions'
 import { CopyButton } from '@/components/CopyButton'
-import { ConfirmSubmitButton } from '@/components/ConfirmSubmitButton'
 import { DeleteMediaLocationForm } from '@/components/DeleteMediaLocationForm'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 
@@ -49,7 +47,6 @@ export default async function SessionDetailPage({
           {SESSION_STATUS_LABELS[session.status]}
         </span>
         {!session.isActive && <span className={ui.badge}>No longer in agenda feed</span>}
-        {session.isManual && <span className={ui.badgeClasses('bg-rule text-ink')}>Manual</span>}
       </div>
       <p className={`${ui.muted} mt-2`}>
         {session.date.toLocaleDateString()} · {session.startTime.slice(0, 5)}–{session.endTime.slice(0, 5)}
@@ -73,22 +70,6 @@ export default async function SessionDetailPage({
           Save status
         </button>
       </form>
-
-      {session.isManual && (
-        <div className="flex gap-2.5 mt-4">
-          <Link href={`/events/${eventId}/sessions/${sessionId}/edit`}>
-            <button className={ui.button}>Edit session</button>
-          </Link>
-          <form action={deleteSession.bind(null, eventId, sessionId)}>
-            <ConfirmSubmitButton
-              className={ui.button}
-              confirmMessage="Delete this session? Any media locations linked to it will be kept but unlinked from it."
-            >
-              Delete session
-            </ConfirmSubmitButton>
-          </form>
-        </div>
-      )}
 
       <h2 className={ui.h2}>Media Locations</h2>
       <p className={`${ui.muted} mb-3`}>Storage: {session.event.storage}</p>

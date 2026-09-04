@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getEventWithSessionTree } from '@/lib/data'
-import { deleteSession } from './actions'
 import { CoverageRow } from '@/components/CoverageRow'
 import { ScrollToRow } from '@/components/ScrollToRow'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
@@ -34,8 +33,6 @@ export default async function SessionsPage({
 }: {
   params: Promise<{ eventId: string }>
   searchParams: Promise<{
-    sessionAdded?: string
-    sessionDeleted?: string
     mediaAdded?: string
     mediaUpdated?: string
     mediaDeleted?: string
@@ -46,8 +43,7 @@ export default async function SessionsPage({
   }>
 }) {
   const { eventId } = await params
-  const { sessionAdded, sessionDeleted, mediaAdded, mediaUpdated, mediaDeleted, q, status, day, open } =
-    await searchParams
+  const { mediaAdded, mediaUpdated, mediaDeleted, q, status, day, open } = await searchParams
   const focusId = open ?? mediaAdded ?? mediaUpdated
 
   const event = await getEventWithSessionTree(eventId)
@@ -88,39 +84,33 @@ export default async function SessionsPage({
         ]}
       />
       <h1 className={ui.h1}>Sessions</h1>
-      {sessionAdded && <p className={`${ui.bannerOk} mt-3`}>Session added.</p>}
-      {sessionDeleted && <p className={`${ui.bannerOk} mt-3`}>Session deleted.</p>}
       {mediaAdded && <p className={`${ui.bannerOk} mt-3`}>Media location added.</p>}
       {mediaUpdated && <p className={`${ui.bannerOk} mt-3`}>Media location updated.</p>}
       {mediaDeleted && <p className={`${ui.bannerOk} mt-3`}>Media location deleted.</p>}
 
-      <div className="mt-4 mb-4">
-        <Link href={`/events/${eventId}/sessions/new`}>
-          <button className={ui.button}>Add session</button>
-        </Link>
-      </div>
-
-      {availableDays.length > 0 && (
-        <nav className={ui.dayChipStrip} aria-label="Day">
-          {availableDays.map((d) => (
+      <div className="mt-4">
+        {availableDays.length > 0 && (
+          <nav className={ui.dayChipStrip} aria-label="Day">
+            {availableDays.map((d) => (
+              <Link
+                key={d}
+                href={buildHref(eventBase, { day: d }, currentFilters)}
+                className={`${ui.dayChip} ${resolvedDay === d ? ui.dayChipActive : ui.dayChipInactive}`}
+              >
+                {formatShortDay(new Date(`${d}T00:00:00`))}
+                {d === todayKey && <span aria-hidden> •</span>}
+              </Link>
+            ))}
             <Link
-              key={d}
-              href={buildHref(eventBase, { day: d }, currentFilters)}
-              className={`${ui.dayChip} ${resolvedDay === d ? ui.dayChipActive : ui.dayChipInactive}`}
+              href={buildHref(eventBase, { day: 'all' }, currentFilters)}
+              className={`${ui.dayChip} ${resolvedDay === 'all' ? ui.dayChipActive : ui.dayChipInactive}`}
             >
-              {formatShortDay(new Date(`${d}T00:00:00`))}
-              {d === todayKey && <span aria-hidden> •</span>}
+              All days
             </Link>
-          ))}
-          <Link
-            href={buildHref(eventBase, { day: 'all' }, currentFilters)}
-            className={`${ui.dayChip} ${resolvedDay === 'all' ? ui.dayChipActive : ui.dayChipInactive}`}
-          >
-            All days
-          </Link>
-        </nav>
-      )}
-      {showingFallback && <p className={`${ui.muted} -mt-2 mb-4`}>No sessions today — showing all days.</p>}
+          </nav>
+        )}
+        {showingFallback && <p className={`${ui.muted} -mt-2 mb-4`}>No sessions today — showing all days.</p>}
+      </div>
 
       <form className={ui.filterBar}>
         <input type="hidden" name="day" value={resolvedDay} />
@@ -181,11 +171,7 @@ export default async function SessionsPage({
                               }
                             : undefined
                         }
-                        manualBadge={session.isManual}
                         inactiveBadge={!session.isActive}
-                        editHref={session.isManual ? `/events/${eventId}/sessions/${session.id}/edit` : undefined}
-                        deleteAction={session.isManual ? deleteSession.bind(null, eventId, session.id) : undefined}
-                        deleteConfirmMessage="Delete this session? Any media locations linked to it will be kept but unlinked from it."
                         mediaLocations={session.mediaLocations}
                         autoOpen={session.id === focusId}
                         returnTo={returnTo}

@@ -67,7 +67,6 @@ model Session {
   sessionTypeId  Int?
   status         SessionStatus   @default(AVAILABLE)
   isActive       Boolean         @default(true)
-  isManual       Boolean         @default(false)
   lastSyncedAt   DateTime        @default(now())
   mediaLocations MediaLocation[]
 
@@ -143,7 +142,6 @@ enum ActivityAction {
   CREATE
   UPDATE
   DELETE
-  SYNC
 }
 
 enum MediaType {

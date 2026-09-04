@@ -9,7 +9,6 @@ const ACTION_BADGE_CLASSES: Record<ActivityAction, string> = {
   CREATE: 'bg-ok text-paper',
   UPDATE: 'bg-accent text-paper',
   DELETE: 'bg-danger text-paper',
-  SYNC: 'bg-accent-ink text-paper',
 }
 
 function viewHrefFor(eventId: string, entityType: string | null, entityId: string | null) {
@@ -60,7 +59,11 @@ export default async function ActivityPage({ params }: { params: Promise<{ event
                 <span className={ui.badgeClasses(ACTION_BADGE_CLASSES[entry.action])}>{entry.action}</span>
                 <span className="flex-1">{entry.message}</span>
                 <span className="font-mono text-xs text-ink-soft whitespace-nowrap">
-                  {new Date(entry.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                  {new Date(entry.createdAt).toLocaleString(undefined, {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                    timeZone: 'Asia/Dubai',
+                  })}
                 </span>
                 {viewHref && (
                   <Link href={viewHref} className="text-xs hover:underline hover:decoration-accent">
