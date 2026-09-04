@@ -7,6 +7,7 @@ import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { sessionStatusBadgeClasses, SESSION_STATUS_LABELS } from '@/lib/session-status-badge'
 import { SessionStatus } from '@/generated/prisma/enums'
 import { dayKeyOf, formatDate, formatShortDay } from '@/lib/day-key'
+import type { SessionSpeaker } from '@/lib/session-speaker'
 import * as ui from '@/lib/ui'
 
 const SESSION_STATUSES = Object.values(SessionStatus)
@@ -58,7 +59,12 @@ export default async function SessionsPage({
   const filteredSessions = event.sessions.filter((session) => {
     if (status && session.status !== status) return false
     if (resolvedDay !== 'all' && dayKeyOf(session.date) !== resolvedDay) return false
-    if (query && !session.name.toLowerCase().includes(query)) return false
+    if (query) {
+      const speakers = (session.speakers as SessionSpeaker[] | null) ?? []
+      const matchesName = session.name.toLowerCase().includes(query)
+      const matchesSpeaker = speakers.some((speaker) => speaker.name.toLowerCase().includes(query))
+      if (!matchesName && !matchesSpeaker) return false
+    }
     return true
   })
 
@@ -116,7 +122,7 @@ export default async function SessionsPage({
         <input type="hidden" name="day" value={resolvedDay} />
         <label className={ui.label}>
           Search
-          <input type="text" name="q" defaultValue={q} placeholder="session name" className={ui.input} />
+          <input type="text" name="q" defaultValue={q} placeholder="session or speaker name" className={ui.input} />
         </label>
         <label className={ui.label}>
           Status
@@ -142,7 +148,9 @@ export default async function SessionsPage({
         [...days.entries()].map(([dayKey, sessions]) => {
           const rooms = new Map<string, typeof sessions>()
           for (const session of sessions) {
-            const roomName = session.room?.name || 'Unassigned Room'
+            // Some events (e.g. track-only agendas) never assign a Room at all — group by
+            // Track instead of dumping every session into one "Unassigned Room" bucket.
+            const roomName = session.room?.name || session.track?.name || 'Unassigned Room'
             if (!rooms.has(roomName)) rooms.set(roomName, [])
             rooms.get(roomName)!.push(session)
           }
