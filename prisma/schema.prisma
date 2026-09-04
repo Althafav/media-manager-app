@@ -68,6 +68,7 @@ model Session {
   status         SessionStatus   @default(AVAILABLE)
   isActive       Boolean         @default(true)
   lastSyncedAt   DateTime        @default(now())
+  speakers       Json?
   mediaLocations MediaLocation[]
 
   @@unique([eventId, externalId])

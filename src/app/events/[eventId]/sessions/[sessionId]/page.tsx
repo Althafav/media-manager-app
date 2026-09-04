@@ -9,6 +9,8 @@ import { updateSessionStatus } from './actions'
 import { CopyButton } from '@/components/CopyButton'
 import { DeleteMediaLocationForm } from '@/components/DeleteMediaLocationForm'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
+import { SessionSpeakers } from '@/components/SessionSpeakers'
+import type { SessionSpeaker } from '@/lib/session-speaker'
 
 const SESSION_STATUSES = Object.values(SessionStatus)
 
@@ -27,6 +29,7 @@ export default async function SessionDetailPage({
   if (!session || session.eventId !== eventId) notFound()
 
   const returnTo = `/events/${eventId}/sessions/${sessionId}`
+  const speakers = (session.speakers as SessionSpeaker[] | null) ?? []
 
   return (
     <div className={ui.page}>
@@ -53,6 +56,13 @@ export default async function SessionDetailPage({
         {session.track && <> · {session.track.name}</>}
         {session.sessionType && <> · {session.sessionType}</>}
       </p>
+
+      {speakers.length > 0 && (
+        <>
+          <h2 className={ui.h2}>Speakers</h2>
+          <SessionSpeakers speakers={speakers} />
+        </>
+      )}
 
       <form action={updateSessionStatus.bind(null, eventId, sessionId)} className={`${ui.formInline} mt-4`}>
         <label className={ui.label}>

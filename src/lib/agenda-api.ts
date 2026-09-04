@@ -1,3 +1,10 @@
+export interface AgendaApiSpeaker {
+  Name: string
+  JobTitle: string | null
+  Organization: string | null
+  Image: string | null
+}
+
 export interface AgendaApiSession {
   ItemID: number
   SessionName: string
@@ -20,7 +27,7 @@ export interface AgendaApiSession {
     Color: string | null
   } | null
   SessionPartners: unknown[]
-  Speakers: unknown[]
+  Speakers: AgendaApiSpeaker[]
 }
 
 export async function fetchAgendaSessions(eventExternalId: string): Promise<AgendaApiSession[]> {

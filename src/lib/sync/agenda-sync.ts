@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { fetchAgendaSessions } from '@/lib/agenda-api'
+import { mapAgendaSpeakers } from '@/lib/session-speaker'
 
 function uniqueBy<T, K>(items: T[], key: (item: T) => K | null): Map<K, T> {
   const map = new Map<K, T>()
@@ -71,6 +72,7 @@ export async function syncAgendaForEvent(eventExternalId: string, eventName?: st
         const roomRecordId = s.RoomID ? roomIdByExternal.get(s.RoomID) : undefined
         const trackExternalId = s.TrackData?.ItemID ?? s.TrackID ?? null
         const trackRecordId = trackExternalId ? trackIdByExternal.get(trackExternalId) : undefined
+        const speakers = mapAgendaSpeakers(s.Speakers ?? [])
 
         await tx.session.upsert({
           where: { eventId_externalId: { eventId: event.id, externalId: s.ItemID } },
@@ -85,6 +87,7 @@ export async function syncAgendaForEvent(eventExternalId: string, eventName?: st
             trackId: trackRecordId ?? null,
             isActive: true,
             lastSyncedAt: new Date(),
+            speakers,
           },
           create: {
             eventId: event.id,
@@ -97,6 +100,7 @@ export async function syncAgendaForEvent(eventExternalId: string, eventName?: st
             sessionTypeId: s.SessionTypeID,
             roomId: roomRecordId ?? null,
             trackId: trackRecordId ?? null,
+            speakers,
           },
         })
         seenExternalIds.push(s.ItemID)
