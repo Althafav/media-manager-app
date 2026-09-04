@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath, updateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { boothInputSchema } from '@/lib/validation/booth'
+import { logActivity } from '@/lib/activity-log'
 
 export type BoothFormState = {
   errors?: Partial<Record<'name' | 'form', string>>
@@ -24,16 +25,27 @@ export async function createBooth(_prevState: BoothFormState, formData: FormData
     return { values: raw, errors: { name: parsed.error.flatten().fieldErrors.name?.[0] } }
   }
 
+  let booth
   try {
-    await prisma.booth.create({ data: parsed.data })
+    booth = await prisma.booth.create({ data: parsed.data })
   } catch {
     return { values: raw, errors: { form: 'Could not save this booth. Please try again.' } }
   }
 
+  await logActivity({
+    eventId: parsed.data.eventId,
+    action: 'CREATE',
+    message: `Added booth "${booth.name}".`,
+    entityType: 'booth',
+    entityId: booth.id,
+  })
+
   updateTag('events')
   updateTag(`event:${parsed.data.eventId}`)
+  updateTag(`activity:${parsed.data.eventId}`)
   revalidatePath(`/events/${parsed.data.eventId}`)
   revalidatePath(`/events/${parsed.data.eventId}/booths`)
+  revalidatePath(`/events/${parsed.data.eventId}/activity`)
   redirect(`/events/${parsed.data.eventId}/booths?boothAdded=1`)
 }
 
@@ -58,16 +70,26 @@ export async function updateBooth(
     return { values: raw, errors: { form: 'Could not save changes. Please try again.' } }
   }
 
+  await logActivity({
+    eventId: parsed.data.eventId,
+    action: 'UPDATE',
+    message: `Updated booth "${parsed.data.name}".`,
+    entityType: 'booth',
+    entityId: boothId,
+  })
+
   updateTag('events')
   updateTag(`event:${parsed.data.eventId}`)
   updateTag(`booth:${boothId}`)
+  updateTag(`activity:${parsed.data.eventId}`)
   revalidatePath(`/events/${parsed.data.eventId}`)
   revalidatePath(`/events/${parsed.data.eventId}/booths`)
+  revalidatePath(`/events/${parsed.data.eventId}/activity`)
   redirect(`/events/${parsed.data.eventId}/booths?boothUpdated=1`)
 }
 
 export async function deleteBooth(eventId: string, boothId: string) {
-  const existing = await prisma.booth.findUnique({ where: { id: boothId }, select: { eventId: true } })
+  const existing = await prisma.booth.findUnique({ where: { id: boothId }, select: { eventId: true, name: true } })
   if (!existing || existing.eventId !== eventId) {
     throw new Error('Booth not found')
   }
@@ -77,12 +99,22 @@ export async function deleteBooth(eventId: string, boothId: string) {
     prisma.booth.delete({ where: { id: boothId } }),
   ])
 
+  await logActivity({
+    eventId,
+    action: 'DELETE',
+    message: `Deleted booth "${existing.name}".`,
+    entityType: 'booth',
+    entityId: boothId,
+  })
+
   updateTag('events')
   updateTag(`event:${eventId}`)
   updateTag(`booth:${boothId}`)
   updateTag(`media-locations:${eventId}`)
+  updateTag(`activity:${eventId}`)
   revalidatePath(`/events/${eventId}`)
   revalidatePath(`/events/${eventId}/booths`)
   revalidatePath(`/events/${eventId}/media-locations`)
+  revalidatePath(`/events/${eventId}/activity`)
   redirect(`/events/${eventId}/booths?boothDeleted=1`)
 }

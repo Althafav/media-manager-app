@@ -21,6 +21,7 @@ model Event {
   tracks         Track[]
   rooms          Room[]
   mediaLocations MediaLocation[]
+  activityLogs   ActivityLog[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 }
@@ -123,6 +124,26 @@ model MediaLocation {
   @@index([sessionId])
   @@index([boothId])
   @@index([otherItemId])
+}
+
+model ActivityLog {
+  id         String         @id @default(cuid())
+  eventId    String
+  event      Event          @relation(fields: [eventId], references: [id])
+  action     ActivityAction
+  message    String
+  entityType String?
+  entityId   String?
+  createdAt  DateTime       @default(now())
+
+  @@index([eventId, createdAt])
+}
+
+enum ActivityAction {
+  CREATE
+  UPDATE
+  DELETE
+  SYNC
 }
 
 enum MediaType {

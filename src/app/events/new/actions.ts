@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { updateTag } from 'next/cache'
 import { syncAgendaForEvent } from '@/lib/sync/agenda-sync'
 import { newEventSchema } from '@/lib/validation/event'
+import { logActivity } from '@/lib/activity-log'
 
 export type NewEventState = {
   errors?: Partial<Record<'eventExternalId' | 'name' | 'storage' | 'form', string>>
@@ -42,6 +43,15 @@ export async function createAndSyncEvent(_prevState: NewEventState, formData: Fo
     }
   }
 
+  await logActivity({
+    eventId,
+    action: 'SYNC',
+    message: 'Event created and synced from the agenda API.',
+    entityType: 'event',
+    entityId: eventId,
+  })
+
   updateTag('events')
+  updateTag(`activity:${eventId}`)
   redirect(`/events/${eventId}?added=1`)
 }

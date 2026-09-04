@@ -98,12 +98,20 @@ export default async function EventDetailPage({
         </a>
       </div>
 
-      <Link
-        href={`/events/${event.id}/media-locations`}
-        className="inline-block mb-6 hover:underline hover:decoration-accent hover:decoration-2"
-      >
-        View all media locations
-      </Link>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 mb-6">
+        <Link
+          href={`/events/${event.id}/media-locations`}
+          className="inline-block hover:underline hover:decoration-accent hover:decoration-2"
+        >
+          View all media locations
+        </Link>
+        <Link
+          href={`/events/${event.id}/activity`}
+          className="inline-block hover:underline hover:decoration-accent hover:decoration-2"
+        >
+          View activity log
+        </Link>
+      </div>
 
       <CoverageStrip eventId={eventId} entries={coverageEntries} />
 

@@ -182,6 +182,7 @@ export default async function SessionsPage({
                             : undefined
                         }
                         manualBadge={session.isManual}
+                        inactiveBadge={!session.isActive}
                         editHref={session.isManual ? `/events/${eventId}/sessions/${session.id}/edit` : undefined}
                         deleteAction={session.isManual ? deleteSession.bind(null, eventId, session.id) : undefined}
                         deleteConfirmMessage="Delete this session? Any media locations linked to it will be kept but unlinked from it."

@@ -13,6 +13,7 @@ const VALID_MEDIA_TYPES = new Set<string>(Object.values(MediaType))
 //   `other-item:${otherItemId}`     -> one other item's detail + its media locations
 //   `media-locations:${eventId}`    -> the searchable media-location list for that event
 //   `media-location:${id}`          -> a single media location (edit page)
+//   `activity:${eventId}`           -> that event's activity log
 // A short time-based revalidate rides alongside every tag as a safety net for
 // changes a tag doesn't precisely track (e.g. which sessions an agenda sync touched).
 
@@ -50,8 +51,11 @@ export async function getEventWithSessionTree(eventId: string) {
       prisma.event.findUnique({
         where: { id: eventId },
         include: {
+          // Not filtered to isActive: true — a session dropped from the live agenda by a later
+          // sync can still carry real logged media, and hiding it here would make this page's
+          // totals (and the Coverage Strip) disagree with the Excel export, which intentionally
+          // counts everything. Inactive sessions are visually flagged instead (see CoverageRow).
           sessions: {
-            where: { isActive: true },
             include: {
               room: true,
               track: true,
@@ -236,5 +240,18 @@ export async function getMediaLocations(
       filters.otherItemId ?? '',
     ],
     { tags: [`media-locations:${eventId}`], revalidate: 30 }
+  )()
+}
+
+export async function getActivityLog(eventId: string, limit = 50) {
+  return unstable_cache(
+    async () =>
+      prisma.activityLog.findMany({
+        where: { eventId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+      }),
+    ['activity-log', eventId, String(limit)],
+    { tags: [`activity:${eventId}`], revalidate: 30 }
   )()
 }

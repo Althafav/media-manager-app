@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath, updateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { mediaLocationInputSchema } from '@/lib/validation/media-location'
+import { logActivity } from '@/lib/activity-log'
 
 export type MediaLocationFormState = {
   errors?: Partial<Record<'folderPath' | 'mediaType' | 'sessionId' | 'boothId' | 'otherItemId' | 'form', string>>
@@ -85,21 +86,32 @@ export async function createMediaLocation(
   const { raw, parsed } = parseForm(formData)
   if (!parsed.success) return { values: raw, errors: fieldErrorsFrom(parsed) }
 
+  let created
   try {
-    await prisma.mediaLocation.create({ data: parsed.data })
+    created = await prisma.mediaLocation.create({ data: parsed.data })
   } catch {
     return { values: raw, errors: { form: 'Could not save this media location. Please try again.' } }
   }
 
+  await logActivity({
+    eventId: parsed.data.eventId,
+    action: 'CREATE',
+    message: `Added media location "${created.folderPath}".`,
+    entityType: 'media-location',
+    entityId: created.id,
+  })
+
   updateTag('events')
   updateTag(`event:${parsed.data.eventId}`)
   updateTag(`media-locations:${parsed.data.eventId}`)
+  updateTag(`activity:${parsed.data.eventId}`)
   if (parsed.data.sessionId) updateTag(`session:${parsed.data.sessionId}`)
   if (parsed.data.boothId) updateTag(`booth:${parsed.data.boothId}`)
   if (parsed.data.otherItemId) updateTag(`other-item:${parsed.data.otherItemId}`)
 
   const returnTo = resolveReturnTo(raw.returnTo, parsed.data.eventId)
   revalidatePath(returnTo ?? `/events/${parsed.data.eventId}/media-locations`)
+  revalidatePath(`/events/${parsed.data.eventId}/activity`)
   if (parsed.data.sessionId) {
     revalidatePath(`/events/${parsed.data.eventId}/sessions/${parsed.data.sessionId}`)
   }
@@ -139,10 +151,19 @@ export async function updateMediaLocation(
     return { values: raw, errors: { form: 'Could not save changes. Please try again.' } }
   }
 
+  await logActivity({
+    eventId: parsed.data.eventId,
+    action: 'UPDATE',
+    message: `Updated media location "${parsed.data.folderPath}".`,
+    entityType: 'media-location',
+    entityId: mediaLocationId,
+  })
+
   updateTag('events')
   updateTag(`event:${parsed.data.eventId}`)
   updateTag(`media-locations:${parsed.data.eventId}`)
   updateTag(`media-location:${mediaLocationId}`)
+  updateTag(`activity:${parsed.data.eventId}`)
   if (parsed.data.sessionId) updateTag(`session:${parsed.data.sessionId}`)
   if (previousSessionId && previousSessionId !== parsed.data.sessionId) {
     updateTag(`session:${previousSessionId}`)
@@ -157,6 +178,7 @@ export async function updateMediaLocation(
   }
   const returnTo = resolveReturnTo(raw.returnTo, parsed.data.eventId)
   revalidatePath(returnTo ?? `/events/${parsed.data.eventId}/media-locations`)
+  revalidatePath(`/events/${parsed.data.eventId}/activity`)
   if (parsed.data.sessionId) {
     revalidatePath(`/events/${parsed.data.eventId}/sessions/${parsed.data.sessionId}`)
   }
@@ -184,17 +206,26 @@ export async function deleteMediaLocation(mediaLocationId: string, formData: For
 
   const existing = await prisma.mediaLocation.findUnique({
     where: { id: mediaLocationId },
-    select: { eventId: true, sessionId: true, boothId: true, otherItemId: true },
+    select: { eventId: true, sessionId: true, boothId: true, otherItemId: true, folderPath: true },
   })
   const resolvedEventId = existing?.eventId ?? eventId
 
   if (existing) {
     await prisma.mediaLocation.delete({ where: { id: mediaLocationId } })
 
+    await logActivity({
+      eventId: existing.eventId,
+      action: 'DELETE',
+      message: `Deleted media location "${existing.folderPath}".`,
+      entityType: 'media-location',
+      entityId: mediaLocationId,
+    })
+
     updateTag('events')
     updateTag(`event:${existing.eventId}`)
     updateTag(`media-locations:${existing.eventId}`)
     updateTag(`media-location:${mediaLocationId}`)
+    updateTag(`activity:${existing.eventId}`)
     if (existing.sessionId) {
       updateTag(`session:${existing.sessionId}`)
       revalidatePath(`/events/${existing.eventId}/sessions/${existing.sessionId}`)
@@ -207,6 +238,7 @@ export async function deleteMediaLocation(mediaLocationId: string, formData: For
       updateTag(`other-item:${existing.otherItemId}`)
       revalidatePath(`/events/${existing.eventId}/other-items/${existing.otherItemId}`)
     }
+    revalidatePath(`/events/${existing.eventId}/activity`)
   }
 
   const resolvedReturnTo = resolveReturnTo(returnTo, resolvedEventId)

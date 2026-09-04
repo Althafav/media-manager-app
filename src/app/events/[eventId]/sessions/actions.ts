@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath, updateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { sessionInputSchema } from '@/lib/validation/session'
+import { logActivity } from '@/lib/activity-log'
 
 export type SessionFormState = {
   errors?: Partial<Record<'name' | 'date' | 'startTime' | 'endTime' | 'roomId' | 'trackId' | 'form', string>>
@@ -78,8 +79,9 @@ export async function createSession(_prevState: SessionFormState, formData: Form
   const { raw, parsed } = parseForm(formData)
   if (!parsed.success) return { values: raw, errors: fieldErrorsFrom(parsed) }
 
+  let session
   try {
-    await createManualSession({
+    session = await createManualSession({
       eventId: parsed.data.eventId,
       name: parsed.data.name,
       date: new Date(parsed.data.date),
@@ -92,10 +94,20 @@ export async function createSession(_prevState: SessionFormState, formData: Form
     return { values: raw, errors: { form: 'Could not save this session. Please try again.' } }
   }
 
+  await logActivity({
+    eventId: parsed.data.eventId,
+    action: 'CREATE',
+    message: `Added session "${session.name}".`,
+    entityType: 'session',
+    entityId: session.id,
+  })
+
   updateTag('events')
   updateTag(`event:${parsed.data.eventId}`)
+  updateTag(`activity:${parsed.data.eventId}`)
   revalidatePath(`/events/${parsed.data.eventId}`)
   revalidatePath(`/events/${parsed.data.eventId}/sessions`)
+  revalidatePath(`/events/${parsed.data.eventId}/activity`)
   redirect(`/events/${parsed.data.eventId}/sessions?sessionAdded=1`)
 }
 
@@ -131,19 +143,29 @@ export async function updateSession(
     return { values: raw, errors: { form: 'Could not save changes. Please try again.' } }
   }
 
+  await logActivity({
+    eventId: parsed.data.eventId,
+    action: 'UPDATE',
+    message: `Updated session "${parsed.data.name}".`,
+    entityType: 'session',
+    entityId: sessionId,
+  })
+
   updateTag('events')
   updateTag(`event:${parsed.data.eventId}`)
   updateTag(`session:${sessionId}`)
+  updateTag(`activity:${parsed.data.eventId}`)
   revalidatePath(`/events/${parsed.data.eventId}`)
   revalidatePath(`/events/${parsed.data.eventId}/sessions`)
   revalidatePath(`/events/${parsed.data.eventId}/sessions/${sessionId}`)
+  revalidatePath(`/events/${parsed.data.eventId}/activity`)
   redirect(`/events/${parsed.data.eventId}/sessions/${sessionId}?updated=1`)
 }
 
 export async function deleteSession(eventId: string, sessionId: string) {
   const existing = await prisma.session.findUnique({
     where: { id: sessionId },
-    select: { isManual: true, eventId: true },
+    select: { isManual: true, eventId: true, name: true },
   })
   if (!existing || !existing.isManual || existing.eventId !== eventId) {
     throw new Error('Only manually-added sessions can be deleted')
@@ -154,12 +176,22 @@ export async function deleteSession(eventId: string, sessionId: string) {
     prisma.session.delete({ where: { id: sessionId } }),
   ])
 
+  await logActivity({
+    eventId,
+    action: 'DELETE',
+    message: `Deleted session "${existing.name}".`,
+    entityType: 'session',
+    entityId: sessionId,
+  })
+
   updateTag('events')
   updateTag(`event:${eventId}`)
   updateTag(`session:${sessionId}`)
   updateTag(`media-locations:${eventId}`)
+  updateTag(`activity:${eventId}`)
   revalidatePath(`/events/${eventId}`)
   revalidatePath(`/events/${eventId}/sessions`)
   revalidatePath(`/events/${eventId}/media-locations`)
+  revalidatePath(`/events/${eventId}/activity`)
   redirect(`/events/${eventId}/sessions?sessionDeleted=1`)
 }
