@@ -46,7 +46,6 @@ export default async function SessionDetailPage({
         <span className={ui.badgeClasses(sessionStatusBadgeClasses(session.status))}>
           {SESSION_STATUS_LABELS[session.status]}
         </span>
-        {!session.isActive && <span className={ui.badge}>No longer in agenda feed</span>}
       </div>
       <p className={`${ui.muted} mt-2`}>
         {session.date.toLocaleDateString()} · {session.startTime.slice(0, 5)}–{session.endTime.slice(0, 5)}

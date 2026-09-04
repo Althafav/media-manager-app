@@ -171,7 +171,6 @@ export default async function SessionsPage({
                               }
                             : undefined
                         }
-                        inactiveBadge={!session.isActive}
                         mediaLocations={session.mediaLocations}
                         autoOpen={session.id === focusId}
                         returnTo={returnTo}

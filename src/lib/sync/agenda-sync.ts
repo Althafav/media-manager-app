@@ -102,13 +102,36 @@ export async function syncAgendaForEvent(eventExternalId: string, eventName?: st
         seenExternalIds.push(s.ItemID)
       }
 
-      const { count: sessionsDeactivated } = await tx.session.updateMany({
-        where: { eventId: event.id, externalId: { notIn: seenExternalIds }, isActive: true },
-        data: { isActive: false },
+      // Sessions the agenda no longer lists: safe to hard-delete only if nothing is logged
+      // against them — otherwise deleting would either fail on MediaLocation's FK or destroy
+      // real logged data, which CLAUDE.md explicitly forbids. Re-checked on every sync (not just
+      // isActive: true ones) so a session that later gains/loses media is reclassified correctly.
+      const missingSessions = await tx.session.findMany({
+        where: { eventId: event.id, externalId: { notIn: seenExternalIds } },
+        select: { id: true, _count: { select: { mediaLocations: true } } },
       })
-      // MediaLocation rows are never read or written here — sync must never touch them.
+      const emptyIds = missingSessions.filter((s) => s._count.mediaLocations === 0).map((s) => s.id)
+      const withMediaIds = missingSessions.filter((s) => s._count.mediaLocations > 0).map((s) => s.id)
 
-      return { eventId: event.id, sessionsUpserted: sessions.length, sessionsDeactivated }
+      // MediaLocation rows themselves are never written here — sync must never touch them.
+      if (emptyIds.length > 0) {
+        await tx.session.deleteMany({ where: { id: { in: emptyIds } } })
+      }
+      let sessionsDeactivated = 0
+      if (withMediaIds.length > 0) {
+        const result = await tx.session.updateMany({
+          where: { id: { in: withMediaIds } },
+          data: { isActive: false },
+        })
+        sessionsDeactivated = result.count
+      }
+
+      return {
+        eventId: event.id,
+        sessionsUpserted: sessions.length,
+        sessionsDeactivated,
+        sessionsDeleted: emptyIds.length,
+      }
     },
     { timeout: 120000 }
   )

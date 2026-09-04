@@ -27,7 +27,6 @@ export function CoverageRow({
   timeLabel,
   statusBadge,
   manualBadge,
-  inactiveBadge,
   description,
   editHref,
   deleteAction,
@@ -44,7 +43,6 @@ export function CoverageRow({
   timeLabel?: string
   statusBadge?: { label: string; className: string }
   manualBadge?: boolean
-  inactiveBadge?: boolean
   description?: string
   editHref?: string
   deleteAction?: (formData: FormData) => Promise<void>
@@ -73,9 +71,6 @@ export function CoverageRow({
             <span className={ui.badgeClasses(`${statusBadge.className} ml-1.5`)}>{statusBadge.label}</span>
           )}
           {manualBadge && <span className={ui.badgeClasses('bg-rule text-ink ml-1.5')}>Manual</span>}
-          {inactiveBadge && (
-            <span className={ui.badgeClasses('bg-rule text-ink ml-1.5')}>No longer in agenda feed</span>
-          )}
         </span>
         <div className="flex flex-col gap-1.5">
           {MEDIA_TYPE_ORDER.filter((type) => counts.has(type)).map((type) => (
