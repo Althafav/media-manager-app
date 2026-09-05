@@ -14,16 +14,18 @@ const SESSION_STATUSES = Object.values(SessionStatus)
 
 function buildHref(
   base: string,
-  overrides: Partial<{ q: string; status: string; day: string }>,
-  current: { q: string; status: string; day: string }
+  overrides: Partial<{ q: string; status: string; day: string; track: string }>,
+  current: { q: string; status: string; day: string; track: string }
 ) {
   const params = new URLSearchParams()
   const q = overrides.q ?? current.q
   const status = overrides.status ?? current.status
   const day = overrides.day ?? current.day
+  const track = overrides.track ?? current.track
   if (q) params.set('q', q)
   if (status) params.set('status', status)
   if (day) params.set('day', day)
+  if (track) params.set('track', track)
   const qs = params.toString()
   return qs ? `${base}?${qs}` : base
 }
@@ -40,11 +42,12 @@ export default async function SessionsPage({
     q?: string
     status?: string
     day?: string
+    track?: string
     open?: string
   }>
 }) {
   const { eventId } = await params
-  const { mediaAdded, mediaUpdated, mediaDeleted, q, status, day, open } = await searchParams
+  const { mediaAdded, mediaUpdated, mediaDeleted, q, status, day, track, open } = await searchParams
   const focusId = open ?? mediaAdded ?? mediaUpdated
 
   const event = await getEventWithSessionTree(eventId)
@@ -55,10 +58,15 @@ export default async function SessionsPage({
   const resolvedDay = day === undefined ? (availableDays.includes(todayKey) ? todayKey : 'all') : day
   const showingFallback = day === undefined && resolvedDay === 'all' && availableDays.length > 0
 
+  const availableTracks = [...new Map(event.sessions.flatMap((s) => (s.track ? [[s.track.id, s.track.name]] : []))).entries()].sort(
+    (a, b) => a[1].localeCompare(b[1])
+  )
+
   const query = q?.trim().toLowerCase() ?? ''
   const filteredSessions = event.sessions.filter((session) => {
     if (status && session.status !== status) return false
     if (resolvedDay !== 'all' && dayKeyOf(session.date) !== resolvedDay) return false
+    if (track && session.track?.id !== track) return false
     if (query) {
       const speakers = (session.speakers as SessionSpeaker[] | null) ?? []
       const matchesName = session.name.toLowerCase().includes(query)
@@ -76,7 +84,7 @@ export default async function SessionsPage({
   }
 
   const eventBase = `/events/${eventId}/sessions`
-  const currentFilters = { q: q ?? '', status: status ?? '', day: resolvedDay }
+  const currentFilters = { q: q ?? '', status: status ?? '', day: resolvedDay, track: track ?? '' }
   const returnTo = buildHref(eventBase, {}, currentFilters)
 
   return (
@@ -135,6 +143,19 @@ export default async function SessionsPage({
             ))}
           </select>
         </label>
+        {availableTracks.length > 0 && (
+          <label className={ui.label}>
+            Track
+            <select name="track" defaultValue={track ?? ''} className={ui.input}>
+              <option value="">Any</option>
+              {availableTracks.map(([id, name]) => (
+                <option key={id} value={id}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <button type="submit" className={ui.button}>
           Filter
         </button>
