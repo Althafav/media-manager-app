@@ -8,7 +8,7 @@ import { updateEventStorageSchema } from '@/lib/validation/event'
 import { logActivity } from '@/lib/activity-log'
 
 export async function resyncEvent(eventId: string) {
-  const result = await performEventSync(eventId)
+  const result = await performEventSync(eventId, { force: true })
   if (!result.ok) redirect(`/events/${eventId}?syncFailed=1`)
   redirect(`/events/${eventId}?synced=1`)
 }

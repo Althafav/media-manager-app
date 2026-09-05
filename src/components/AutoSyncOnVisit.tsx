@@ -14,12 +14,13 @@ export function AutoSyncOnVisit({ eventId }: { eventId: string }) {
     let cancelled = false
 
     fetch(`/events/${eventId}/sync`, { method: 'POST' })
-      .then((res) => res.json() as Promise<{ ok: boolean }>)
+      .then((res) => res.json() as Promise<{ ok: boolean; skipped?: boolean }>)
       .then((data) => {
         if (cancelled) return
         if (data.ok) {
           setStatus('done')
-          router.refresh()
+          // A throttled/skipped sync means nothing changed server-side — no need to refresh.
+          if (!data.skipped) router.refresh()
         } else {
           setStatus('failed')
         }

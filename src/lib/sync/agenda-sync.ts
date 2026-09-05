@@ -1,6 +1,25 @@
 import { prisma } from '@/lib/prisma'
 import { fetchAgendaSessions } from '@/lib/agenda-api'
-import { mapAgendaSpeakers } from '@/lib/session-speaker'
+import { mapAgendaSpeakers, type SessionSpeaker } from '@/lib/session-speaker'
+
+// Postgres JSONB does not preserve object key order, so a speakers value read back from the DB
+// can have different key ordering than a freshly-computed one even when the content is
+// identical — JSON.stringify would then treat every session with speakers as "changed" on
+// every sync. Compare fields directly instead.
+function speakersEqual(stored: unknown, fresh: SessionSpeaker[]): boolean {
+  if (!Array.isArray(stored) || stored.length !== fresh.length) return false
+  return fresh.every((speaker, i) => {
+    const other = stored[i] as Partial<SessionSpeaker> | null
+    return (
+      other !== null &&
+      typeof other === 'object' &&
+      other.name === speaker.name &&
+      other.jobTitle === speaker.jobTitle &&
+      other.organization === speaker.organization &&
+      other.imageUrl === speaker.imageUrl
+    )
+  })
+}
 
 function uniqueBy<T, K>(items: T[], key: (item: T) => K | null): Map<K, T> {
   const map = new Map<K, T>()
@@ -30,8 +49,13 @@ export async function syncAgendaForEvent(eventExternalId: string, eventName?: st
       // storage is only ever set on first creation — re-syncs must never overwrite what the user registered.
       const event = await tx.event.upsert({
         where: { externalId: eventExternalId },
-        update: eventName ? { name: eventName } : {},
-        create: { externalId: eventExternalId, name: eventName ?? eventExternalId, storage: storage ?? '' },
+        update: { ...(eventName ? { name: eventName } : {}), lastSyncedAt: new Date() },
+        create: {
+          externalId: eventExternalId,
+          name: eventName ?? eventExternalId,
+          storage: storage ?? '',
+          lastSyncedAt: new Date(),
+        },
       })
 
       const roomIdByExternal = new Map<number, string>()
@@ -66,43 +90,71 @@ export async function syncAgendaForEvent(eventExternalId: string, eventName?: st
         trackIdByExternal.set(trackExternalId, track.id)
       }
 
+      // A resync re-fetches every session from the agenda API even when nothing changed, so
+      // diff against what's already stored and only write rows that are new or actually
+      // different — upserting all of them unconditionally meant one DB round-trip per session
+      // (76-163+ sequential awaits), which is what made every sync take 15-35+ seconds and hold
+      // a connection that long, starving concurrent page loads.
+      const existingSessions = await tx.session.findMany({
+        where: { eventId: event.id },
+        select: {
+          externalId: true,
+          name: true,
+          date: true,
+          startTime: true,
+          endTime: true,
+          sessionType: true,
+          sessionTypeId: true,
+          roomId: true,
+          trackId: true,
+          isActive: true,
+          speakers: true,
+        },
+      })
+      const existingByExternalId = new Map(existingSessions.map((s) => [s.externalId, s]))
+
       const seenExternalIds: number[] = []
 
       for (const s of sessions) {
-        const roomRecordId = s.RoomID ? roomIdByExternal.get(s.RoomID) : undefined
+        const roomRecordId = s.RoomID ? (roomIdByExternal.get(s.RoomID) ?? null) : null
         const trackExternalId = s.TrackData?.ItemID ?? s.TrackID ?? null
-        const trackRecordId = trackExternalId ? trackIdByExternal.get(trackExternalId) : undefined
+        const trackRecordId = trackExternalId ? (trackIdByExternal.get(trackExternalId) ?? null) : null
         const speakers = mapAgendaSpeakers(s.Speakers ?? [])
+        const date = new Date(s.Date)
 
-        await tx.session.upsert({
-          where: { eventId_externalId: { eventId: event.id, externalId: s.ItemID } },
-          update: {
-            name: s.SessionName,
-            date: new Date(s.Date),
-            startTime: s.StartTime,
-            endTime: s.EndTime,
-            sessionType: s.SessionType,
-            sessionTypeId: s.SessionTypeID,
-            roomId: roomRecordId ?? null,
-            trackId: trackRecordId ?? null,
-            isActive: true,
-            lastSyncedAt: new Date(),
-            speakers,
-          },
-          create: {
-            eventId: event.id,
-            externalId: s.ItemID,
-            name: s.SessionName,
-            date: new Date(s.Date),
-            startTime: s.StartTime,
-            endTime: s.EndTime,
-            sessionType: s.SessionType,
-            sessionTypeId: s.SessionTypeID,
-            roomId: roomRecordId ?? null,
-            trackId: trackRecordId ?? null,
-            speakers,
-          },
-        })
+        const desired = {
+          name: s.SessionName,
+          date,
+          startTime: s.StartTime,
+          endTime: s.EndTime,
+          sessionType: s.SessionType,
+          sessionTypeId: s.SessionTypeID,
+          roomId: roomRecordId,
+          trackId: trackRecordId,
+          speakers,
+        }
+
+        const existing = existingByExternalId.get(s.ItemID)
+        const unchanged =
+          existing &&
+          existing.isActive === true &&
+          existing.name === desired.name &&
+          existing.date.getTime() === desired.date.getTime() &&
+          existing.startTime === desired.startTime &&
+          existing.endTime === desired.endTime &&
+          existing.sessionType === desired.sessionType &&
+          existing.sessionTypeId === desired.sessionTypeId &&
+          existing.roomId === desired.roomId &&
+          existing.trackId === desired.trackId &&
+          speakersEqual(existing.speakers, desired.speakers)
+
+        if (!unchanged) {
+          await tx.session.upsert({
+            where: { eventId_externalId: { eventId: event.id, externalId: s.ItemID } },
+            update: { ...desired, isActive: true, lastSyncedAt: new Date() },
+            create: { eventId: event.id, externalId: s.ItemID, ...desired },
+          })
+        }
         seenExternalIds.push(s.ItemID)
       }
 

@@ -5,6 +5,11 @@ import { MediaType } from '@/generated/prisma/enums'
 
 const VALID_MEDIA_TYPES = new Set<string>(Object.values(MediaType))
 
+// Every mutating action already does precise tag-based invalidation (updateTag/revalidateTag),
+// so this time-based window is purely a safety net for changes a tag doesn't precisely track —
+// it can be generous without risking stale data after a real write.
+const REVALIDATE_SECONDS = 300
+
 // Cache tags:
 //   'events'                        -> the events list (counts change on any sync/media-location write)
 //   `event:${eventId}`              -> that event's session/booth tree / active-session lists
@@ -33,7 +38,7 @@ export async function getEvents(filters: { q?: string } = {}) {
         include: { _count: { select: { sessions: true, mediaLocations: true } } },
       }),
     ['events-list', filters.q ?? ''],
-    { tags: ['events'], revalidate: 60 }
+    { tags: ['events'], revalidate: REVALIDATE_SECONDS }
   )()
 }
 
@@ -41,7 +46,7 @@ export async function getEventBasic(eventId: string) {
   return unstable_cache(
     async () => prisma.event.findUnique({ where: { id: eventId } }),
     ['event-basic', eventId],
-    { tags: [`event:${eventId}`], revalidate: 60 }
+    { tags: [`event:${eventId}`], revalidate: REVALIDATE_SECONDS }
   )()
 }
 
@@ -105,7 +110,7 @@ export async function getEventWithSessionTree(eventId: string) {
         },
       }),
     ['event-with-session-tree', eventId],
-    { tags: [`event:${eventId}`], revalidate: 60 }
+    { tags: [`event:${eventId}`], revalidate: REVALIDATE_SECONDS }
   )()
   // unstable_cache round-trips values through JSON, so Date fields come back as strings.
   if (!event) return event
@@ -128,7 +133,7 @@ export async function getEventWithActiveSessions(eventId: string) {
         },
       }),
     ['event-with-active-sessions', eventId],
-    { tags: [`event:${eventId}`], revalidate: 60 }
+    { tags: [`event:${eventId}`], revalidate: REVALIDATE_SECONDS }
   )()
 }
 
@@ -140,7 +145,7 @@ export async function getBoothDetail(boothId: string) {
         include: { event: true, mediaLocations: { orderBy: { createdAt: 'desc' } } },
       }),
     ['booth-detail', boothId],
-    { tags: [`booth:${boothId}`], revalidate: 60 }
+    { tags: [`booth:${boothId}`], revalidate: REVALIDATE_SECONDS }
   )()
 }
 
@@ -152,7 +157,7 @@ export async function getOtherItemDetail(otherItemId: string) {
         include: { event: true, mediaLocations: { orderBy: { createdAt: 'desc' } } },
       }),
     ['other-item-detail', otherItemId],
-    { tags: [`other-item:${otherItemId}`], revalidate: 60 }
+    { tags: [`other-item:${otherItemId}`], revalidate: REVALIDATE_SECONDS }
   )()
   // unstable_cache round-trips values through JSON, so Date fields come back as strings.
   if (!item) return item
@@ -167,7 +172,7 @@ export async function getSessionDetail(sessionId: string) {
         include: { room: true, track: true, event: true, mediaLocations: { orderBy: { createdAt: 'desc' } } },
       }),
     ['session-detail', sessionId],
-    { tags: [`session:${sessionId}`], revalidate: 60 }
+    { tags: [`session:${sessionId}`], revalidate: REVALIDATE_SECONDS }
   )()
   // unstable_cache round-trips values through JSON, so Date fields come back as strings.
   if (!session) return session
@@ -178,7 +183,7 @@ export async function getMediaLocation(mediaLocationId: string) {
   return unstable_cache(
     async () => prisma.mediaLocation.findUnique({ where: { id: mediaLocationId } }),
     ['media-location', mediaLocationId],
-    { tags: [`media-location:${mediaLocationId}`], revalidate: 60 }
+    { tags: [`media-location:${mediaLocationId}`], revalidate: REVALIDATE_SECONDS }
   )()
 }
 
@@ -224,7 +229,7 @@ export async function getMediaLocations(
       filters.boothId ?? '',
       filters.otherItemId ?? '',
     ],
-    { tags: [`media-locations:${eventId}`], revalidate: 30 }
+    { tags: [`media-locations:${eventId}`], revalidate: REVALIDATE_SECONDS }
   )()
 }
 
@@ -237,6 +242,6 @@ export async function getActivityLog(eventId: string, limit = 50) {
         take: limit,
       }),
     ['activity-log', eventId, String(limit)],
-    { tags: [`activity:${eventId}`], revalidate: 30 }
+    { tags: [`activity:${eventId}`], revalidate: REVALIDATE_SECONDS }
   )()
 }
